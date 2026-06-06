@@ -1,9 +1,9 @@
 # Codex Windows Dogfood Matrix
 
-更新日期：2026-06-05  
-运行 ID：`20260605-212339`  
-策略：只读优先 + 本机真实状态 + `%TEMP%` 安全 fixture。  
-状态：17/17 case 达到目标等级；runner 临时目录已清理。
+更新日期：2026-06-06
+运行 ID：`20260605-212339` + 2026-06-06 manual C017-C018 triage
+策略：只读优先 + 本机真实状态 + `%TEMP%` 安全 fixture。
+状态：18/18 case 达到目标等级；runner 临时目录已清理。
 
 等级定义：
 
@@ -28,5 +28,6 @@
 | C013 | 14. 杀软/Defender/企业安全软件拦截 | Norton/Symantec/Defender blocks helper | L0 | L0 | [#25425](https://github.com/openai/codex/issues/25425)=OPEN；[#26194](https://github.com/openai/codex/issues/26194)=OPEN；[#26218](https://github.com/openai/codex/issues/26218)=OPEN | GitHub issue status only | 仅证据核查：不模拟恶意/混淆命令，不改白名单。 | 不需要。 |
 | C014 | 15. Microsoft Store / 安装位置 / ARM64 | Store install path / ARM64 / non-C drive | L1 | L1 | [#17491](https://github.com/openai/codex/issues/17491)=OPEN | `Get-AppxPackage OpenAI.Codex`；`winget list --name Codex`；inspect architecture | 部分验证：已只读采集 Appx version 和 CPU arch；未改安装位置；公开矩阵不保留具体本机版本。 | 不需要。 |
 | C015 | 16. 报告 issue 模板 | issue report completeness/redaction | L2 | L2 | `%TEMP%` redacted issue draft fixture | generate temp redacted issue draft fixture | 已验证：生成脱敏 issue draft fixture，`redacted=True`，`bytes=627`。 | 不需要。 |
-| C016 | 17. 当前优先级 | P0/P1/P2 priority review | L0 | L0 | C001-C015 dogfood outputs | review case outcomes against guide priority list | 仅证据核查：P0/P1/P2 与本轮证据一致；C001 保持 P1，P0 仍是 sandbox 740、plugin marketplace、large session。 | 不需要。 |
 | C017 | 13/15. LTSC + Store/MSIX + hosts 劫持 | Windows 11 LTSC 2024, no Store UI, MSIX installed, app still will not open | L1 | L1 | X community case；Microsoft LTSC Store Access docs；Microsoft MSIX troubleshooting docs | inspect Store/App Installer/VCLibs/Windows App Runtime packages; inspect hosts; resolve Microsoft/Store/login DNS | 部分验证：根因链已映射为 LTSC/Store/MSIX dependencies/hosts-DNS 叠加；本机只读 diagnostics 已支持 hosts 和 Store runtime dependency 检查。 | 已补指南和 skill。 |
+| C018 | 5/15. Store 检查更新卡住 + MSIX 绕过 + sandbox 授权失败 | Microsoft Store stuck on checking updates; direct MSIX install works; sandbox authorization depends on path | L1 | L1 | X community case；OpenAI Windows sandbox ACL model；Microsoft MSIX troubleshooting docs | inspect Appx `InstallLocation`; inspect workspace path attributes; flag non-C drive/OneDrive/EFS/reparse point risk | 部分验证：根因链已映射为 Store 更新渠道问题 + MSIX 安装绕过 + Windows sandbox 路径/ACL 授权边界。 | 已补指南和 skill。 |
+| C016 | 17. 当前优先级 | P0/P1/P2 priority review | L0 | L0 | C001-C015 + C017-C018 dogfood outputs | review case outcomes against guide priority list | 仅证据核查：P0/P1/P2 与本轮证据一致；C001 保持 P1，P0 仍是 sandbox 740、plugin marketplace、large session；C017/C018 保持 C 级 community leads。 | 不需要。 |

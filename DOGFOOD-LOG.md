@@ -186,4 +186,25 @@ C011/C015 fixture 结果：
 - `WINDOWS-CODEX-ERROR-GUIDE.md`：补入 LTSC/Store/MSIX/hosts 排查路径。
 - `error-matrix.md`：新增 Windows 11 LTSC / no Store UI / app will not open 条目。
 - `official-baseline.md`：补 Microsoft LTSC Store UI 和 MSIX dependency 官方基线。
-- diagnostics：计划补 hosts 和 Store runtime package 只读采集。
+- diagnostics：已补 hosts、Microsoft DNS 和 Store runtime package 只读采集。
+
+## 2026-06-06 / Case 018 / Store checking updates + MSIX install + sandbox path authorization
+
+输入：
+
+- 来源：X 社区 case，用户转述。
+- 场景：Microsoft Store 一直卡在“检查更新”；后来通过直接下载 MSIX 顺利安装；但还需要注意安装目录，否则 Windows sandbox 授权会失败。
+
+根因分析：
+
+- 证据等级：C。
+- 表层问题：Microsoft Store 更新/缓存/网络链路卡住，导致正常 Store 安装路径不可用。
+- 绕过路径：直接 MSIX 安装可以绕过 Store UI/更新卡住，但不是默认推荐通用安装方式。
+- 第二层问题：Windows sandbox 需要对命令执行、workspace、helper、安装路径等做 ACL/权限边界处理；如果安装目录或 workspace 位于非 C 盘、OneDrive、EFS、企业重定向、reparse point、权限继承异常目录，可能出现 sandbox 授权失败。
+- 结论：这类 case 要同时检查 Store 更新状态、MSIX dependencies、Codex Appx `InstallLocation`、workspace 路径属性和 sandbox ACL 失败日志。
+
+已更新：
+
+- `WINDOWS-CODEX-ERROR-GUIDE.md`：补入 Store 检查更新卡住、MSIX 绕过、安装/工作目录 sandbox 授权风险。
+- `error-matrix.md`：新增 Store checking updates + MSIX + sandbox authorization 条目。
+- diagnostics：已补 workspace path attribute / reparse point / OneDrive / drive root 风险采集。

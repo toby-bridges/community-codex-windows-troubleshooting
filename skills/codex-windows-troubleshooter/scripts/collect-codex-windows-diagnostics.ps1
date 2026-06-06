@@ -148,6 +148,46 @@ function Resolve-DnsSummary {
     return $results
 }
 
+function Get-WorkspacePathRisk {
+    param([string]$Path)
+
+    try {
+        $item = Get-Item -LiteralPath $Path -ErrorAction Stop
+        $root = [System.IO.Path]::GetPathRoot($item.FullName)
+        $profile = $env:USERPROFILE
+        $oneDrive = $env:OneDrive
+        $attributes = $item.Attributes.ToString()
+        $isEncrypted = (($item.Attributes -band [System.IO.FileAttributes]::Encrypted) -ne 0)
+        $isReparsePoint = (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0)
+        $isOneDrive = $false
+        if ($oneDrive) {
+            $isOneDrive = $item.FullName.StartsWith($oneDrive, [System.StringComparison]::OrdinalIgnoreCase)
+        }
+
+        return [ordered]@{
+            fullName = $item.FullName
+            root = $root
+            attributes = $attributes
+            isNonCDrive = ($root -and -not $root.StartsWith("C:", [System.StringComparison]::OrdinalIgnoreCase))
+            isUnderUserProfile = ($profile -and $item.FullName.StartsWith($profile, [System.StringComparison]::OrdinalIgnoreCase))
+            isUnderOneDrive = $isOneDrive
+            isEncrypted = $isEncrypted
+            isReparsePoint = $isReparsePoint
+            sandboxPathRiskHints = @(
+                if ($root -and -not $root.StartsWith("C:", [System.StringComparison]::OrdinalIgnoreCase)) { "non-C-drive" }
+                if ($isOneDrive) { "onedrive" }
+                if ($isEncrypted) { "encrypted" }
+                if ($isReparsePoint) { "reparse-point" }
+            )
+        }
+    } catch {
+        return [ordered]@{
+            fullName = $Path
+            error = $_.Exception.Message
+        }
+    }
+}
+
 function Redact-Line {
     param([string]$Line)
     return ($Line `
@@ -179,6 +219,7 @@ $result = [ordered]@{
     codexAppx = $null
     commands = [ordered]@{}
     git = [ordered]@{}
+    workspacePath = [ordered]@{}
     powershell = [ordered]@{}
     wsl = [ordered]@{}
     windowsPackages = [ordered]@{}
@@ -226,6 +267,8 @@ $result.commands.codexVersion = Invoke-Capture -File "codex" -Arguments @("--ver
 $result.commands.codexDoctor = Invoke-Capture -File "codex" -Arguments @("doctor", "--summary")
 $result.commands.gitVersion = Invoke-Capture -File "git" -Arguments @("--version")
 $result.commands.locations = Get-CommandLocations -Names @("codex", "git", "pwsh", "powershell", "winget", "wsl")
+
+$result.workspacePath = Get-WorkspacePathRisk -Path $Workspace
 
 $result.powershell.version = $PSVersionTable.PSVersion.ToString()
 try {

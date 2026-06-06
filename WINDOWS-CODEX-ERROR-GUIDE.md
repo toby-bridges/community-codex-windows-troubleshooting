@@ -214,6 +214,7 @@ git worktree prune
 
 - `codex-windows-sandbox-setup.exe` 文件名包含 `setup.exe`，且某些版本缺少显式 `asInvoker` manifest，Windows UAC installer detection 将它当作需要提权的安装器，非管理员上下文直接 `CreateProcess` 会返回 740。代表 issue：[#24050](https://github.com/openai/codex/issues/24050)、[#26477](https://github.com/openai/codex/issues/26477)。
 - CLI 0.136/0.137 上也有回归报告，0.132.0 在部分机器上可用。代表 issue：[#26158](https://github.com/openai/codex/issues/26158)。
+- Store/MSIX 安装目录或 workspace 路径如果落在 sandbox 用户/ACL 难以授权的位置，也可能表现为 sandbox 授权失败。社区 X case 中，Microsoft Store 一直卡在检查更新，用户通过直接 MSIX 安装成功，但仍需要注意安装目录，否则 sandbox 授权失败。证据等级 C，作为路径/ACL 排查线索。
 
 可尝试解决：
 
@@ -227,6 +228,7 @@ sandbox = "unelevated"
 
 3. 如果是 Browser/Computer Use 触发的 node_repl 错误，可先禁用相关插件，保证普通代码任务可做。
 4. 对可信项目的短期应急可使用 `sandbox_mode = "danger-full-access"`，但这会移除 sandbox 边界，只适合本机可信仓库和明确风险接受。
+5. 如果是 MSIX 绕过 Store 安装后出现 sandbox 授权失败，记录 Codex Appx `InstallLocation`、workspace 路径、是否非 C 盘/OneDrive/加密目录/企业重定向目录，并优先换到普通本地 NTFS 路径测试，例如 `%USERPROFILE%\source\<repo>`。
 
 不建议：
 
@@ -494,6 +496,7 @@ New-Item -ItemType File "$env:USERPROFILE\.codex\config.toml"
 - Microsoft MSIX troubleshooting 文档说明，手动安装 MSIX 时可能缺 VCLibs、Windows App SDK / Windows App Runtime、.NET Native 等 framework package，表现为安装失败或安装后启动崩溃。参考：[MSIX troubleshooting guide](https://learn.microsoft.com/en-us/windows/msix/msix-troubleshooting-guide)。
 - Reddit 中文用户报告：Windows 默认新应用安装位置改到 D 盘后，in-app browser 不可用；恢复默认到 C 盘、卸载重装后恢复。来源：[windows上的codex安装后无法使用应用内的浏览器](https://www.reddit.com/user/xzjpanda/comments/1tp4hcv/windows%E4%B8%8A%E7%9A%84codex%E5%AE%89%E8%A3%85%E5%90%8E%E6%97%A0%E6%B3%95%E4%BD%BF%E7%94%A8%E5%BA%94%E7%94%A8%E5%86%85%E7%9A%84%E6%B5%8F%E8%A7%88%E5%99%A8/)。
 - X 社区 case：给 Windows 11 LTSC 2024 用户手装 Codex MSIX、补 Store 相关包、再从 Store 安装 Codex 仍打不开，最后发现 hosts 文件中 Microsoft 相关域名被劫持。证据等级 C，作为“LTSC/Store/网络解析叠加”的排查线索，不单独证明 Codex bug。
+- X 社区 case：Microsoft Store 一直卡在“检查更新”，最终通过直接下载 MSIX 才成功安装；但还需要注意安装目录，否则 Windows sandbox 授权会失败。证据等级 C，作为“Store 更新卡住 + MSIX 绕过 + 路径/ACL 授权边界”的排查线索。
 - Windows ARM64 仍以 x64 emulation 为主，有性能/电池/二进制缺失讨论。代表 issue：[#17491](https://github.com/openai/codex/issues/17491)。
 
 建议：
@@ -501,6 +504,7 @@ New-Item -ItemType File "$env:USERPROFILE\.codex\config.toml"
 - 优先 Store 官方渠道。
 - 非 C 盘 Store app、企业重定向、EFS、OneDrive、加密目录都应作为插件/Browser/Computer Use 问题的排查变量。
 - LTSC/无 Store UI 场景先确认这四层：系统版本是否 LTSC、Store/App Installer 是否存在、MSIX framework dependencies 是否完整、hosts/DNS 是否能正常解析 Microsoft/Store/login 域名。
+- Store 卡在“检查更新”时，先把它作为 Store/Windows Update/网络/缓存层问题处理；MSIX 可以作为临时绕过安装渠道，但不是默认推荐通用路径。若走 MSIX，需要额外核查依赖包和安装/工作目录对 Windows sandbox ACL 是否友好。
 - ARM64 社区 repackaging 只能作为研究线索，不作为默认推荐。
 
 只读排查命令：
@@ -509,6 +513,8 @@ New-Item -ItemType File "$env:USERPROFILE\.codex\config.toml"
 Get-ComputerInfo | Select-Object WindowsProductName, WindowsVersion, OsBuildNumber
 Get-AppxPackage Microsoft.WindowsStore,Microsoft.DesktopAppInstaller,Microsoft.VCLibs*,Microsoft.WindowsAppRuntime* |
   Select-Object Name,Version,PackageFullName
+Get-AppxPackage OpenAI.Codex | Select-Object Name,Version,InstallLocation
+Get-Item "<WORKSPACE>" | Select-Object FullName,Attributes
 Get-Content "$env:WINDIR\System32\drivers\etc\hosts" |
   Select-String -Pattern "microsoft|windows|store|msft|live.com|microsoftonline|login|aka.ms"
 Resolve-DnsName www.microsoft.com

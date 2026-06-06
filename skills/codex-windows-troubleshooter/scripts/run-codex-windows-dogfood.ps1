@@ -293,16 +293,11 @@ $cases += Add-Case -Id "C014" -Section "15. Microsoft Store / 安装位置 / ARM
 $draft = New-IssueDraftFixture -Cases $cases
 $cases += Add-Case -Id "C015" -Section "16. 报告 issue 模板" -Signature "issue report completeness/redaction" -Target "L2" -Actual "L2" -Evidence "local fixture" -Command "generate temp redacted issue draft fixture" -Conclusion "已验证：生成脱敏 issue draft fixture，redacted=$($draft.redacted)，bytes=$($draft.bytes)。" -NeedsUpdate "不需要。" -Details $draft
 
-$cases += Add-Case -Id "C016" -Section "17. 当前优先级" -Signature "P0/P1/P2 priority review" -Target "L0" -Actual "L0" -Evidence "C001-C015 dogfood outputs" -Command "review case outcomes against guide priority list" -Conclusion "仅证据核查：P0/P1/P2 与本轮证据一致；C001 保持 P1，P0 仍是 sandbox 740、plugin marketplace、large session。" -NeedsUpdate "不需要。"
-
-$storeRuntimeCount = if ($diag -and $diag.windowsPackages.storeRuntime) { $diag.windowsPackages.storeRuntime.Count } else { 0 }
-$hostsEntryCount = if ($diag -and $diag.network.hostsMicrosoftEntries) { $diag.network.hostsMicrosoftEntries.entryCount } else { $null }
-$dnsOk = if ($diag -and $diag.network.microsoftDns) {
-    (($diag.network.microsoftDns | Where-Object { -not $_.ok }).Count -eq 0)
-} else {
-    $false
-}
 $cases += Add-Case -Id "C017" -Section "13/15. LTSC + Store/MSIX + hosts 劫持" -Signature "Windows 11 LTSC, no Store UI, MSIX installed, app still will not open" -Target "L1" -Actual "L1" -Evidence "X community case plus Microsoft LTSC Store Access/MSIX troubleshooting docs" -Command "inspect Store/App Installer/VCLibs/Windows App Runtime packages; inspect hosts; resolve Microsoft/Store/login DNS" -Conclusion "部分验证：只读 diagnostics now checks Store runtime packages, Microsoft-related hosts entries, and DNS. Public matrix should not keep machine-specific counts; local run captured them privately." -NeedsUpdate "已补指南和 skill。"
+
+$cases += Add-Case -Id "C018" -Section "5/15. Store 检查更新卡住 + MSIX 绕过 + sandbox 授权失败" -Signature "Microsoft Store stuck on checking updates; direct MSIX install works; sandbox authorization depends on path" -Target "L1" -Actual "L1" -Evidence "X community case plus Windows sandbox ACL model and Microsoft MSIX troubleshooting docs" -Command "inspect Appx InstallLocation and workspace path attributes/reparse/encryption/drive hints" -Conclusion "部分验证：只读 diagnostics now records workspace path risk hints for sandbox authorization. Public matrix should not keep machine-specific paths; local run captured hints privately." -NeedsUpdate "已补指南和 skill。"
+
+$cases += Add-Case -Id "C016" -Section "17. 当前优先级" -Signature "P0/P1/P2 priority review" -Target "L0" -Actual "L0" -Evidence "C001-C015 plus C017-C018 dogfood outputs" -Command "review case outcomes against guide priority list" -Conclusion "仅证据核查：P0/P1/P2 与本轮证据一致；C001 保持 P1，P0 仍是 sandbox 740、plugin marketplace、large session；C017/C018 保持 C 级 community leads。" -NeedsUpdate "不需要。"
 
 $result = [ordered]@{
     runId = $runId

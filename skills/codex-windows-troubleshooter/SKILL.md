@@ -55,4 +55,4 @@ Run the full safe dogfood pass:
 powershell -NoProfile -ExecutionPolicy Bypass -File "<skill-root>\scripts\run-codex-windows-dogfood.ps1" -Workspace "<affected-repo>"
 ```
 
-The runner covers C001-C016 from the research guide. It uses live GitHub issue checks, local read-only diagnostics, and `%TEMP%` fixtures for reversible reproductions. Use `-KeepArtifacts` only when the user explicitly wants to inspect temporary fixtures.
+The runner covers C001-C018 from the research guide. It uses live GitHub issue checks, local read-only diagnostics, and `%TEMP%` fixtures for reversible reproductions. Use `-KeepArtifacts` only when the user explicitly wants to inspect temporary fixtures.
