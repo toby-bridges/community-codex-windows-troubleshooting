@@ -1,0 +1,22 @@
+# Error Matrix
+
+Keep this as a quick matcher. Re-check GitHub state before claiming latest status.
+
+| Error or symptom | Likely cause | Evidence | First actions |
+| --- | --- | --- | --- |
+| `fatal: invalid reference: master` during worktree creation | Codex passed a non-existent local ref to `git worktree add`; `master` may be stale, remote-only, or absent | B | Read `worktree.md`; verify `git rev-parse --verify master` and `origin/master`; choose or create a real local base branch. |
+| `fatal: invalid reference: master` and `No commits yet on master` | Empty Git repo has an unborn `master`; there is no commit-ish for detached worktree creation | B, local dogfood | Create an initial commit, preferably `git commit --allow-empty -m "Initial commit"` if no files should be tracked yet. |
+| `fatal: invalid reference: main` during worktree creation | Repo has no local `main` or does not use `main` | B, issue #12346 | Use actual default branch from `origin/HEAD`; avoid fake `main`; file/update issue if Codex hard-assumes `main`. |
+| `fatal: invalid reference: feature/...` after selecting branch in UI | UI showed remote-only branch but Codex passed short name to detached worktree creation | B, issue #22635 | Create local tracking branch or select local branch; report remote-only branch mismatch. |
+| `Computer Use plugins unavailable` | Bundled marketplace or plugin cache incomplete, locked, encrypted, or stale | B | Update Codex, stop helper processes, rebuild `.codex\.tmp\bundled-marketplaces` after backup. |
+| `No plugins found in marketplace openai-bundled` | Bundled marketplace copy failed or marketplace JSON missing | B | Check `%USERPROFILE%\.codex\.tmp\bundled-marketplaces\openai-bundled\.agents\plugins\marketplace.json`. |
+| `SetIsBorderRequired failed: 0x80004002` | Windows 10 graphics capture API incompatibility or helper missing feature detection | B | Prefer Windows 11/VM, Browser/Chrome for web tasks; await helper feature detection. |
+| `spawn setup refresh` and `os error 740` | Windows UAC installer detection/elevation issue around sandbox setup helper | B | Update Codex; try `[windows] sandbox = "unelevated"`; downgrade only when version evidence supports it. |
+| `CreateProcessWithLogonW failed: 1326/1909` | Sandbox user startup failure before shell execution | B | Try unelevated sandbox; collect Windows Event Viewer and Codex logs. |
+| `SetTokenInformation(TokenDefaultDacl) failed: 1344` | Restricted token default DACL construction exceeded or malformed ACL edge case | B | Reduce writable roots; avoid broad user-directory roots; use read-only/danger-full-access only with risk acceptance. |
+| DNS/npm fails only inside Codex sandbox | Sandbox network disabled or Windows sandbox network path bug | B | Set `sandbox_workspace_write.network_access = true`; install deps outside sandbox if needed. |
+| WSL mode uses wrong paths/config | Windows/WSL `CODEX_HOME` split-brain or app-server inherits Windows state | B | Pick one workflow; avoid sharing state DB until backed up; verify native vs WSL workspace. |
+| `RangeError: Invalid string length` | Oversized session rollout JSONL loaded into Electron/V8 | B | Back up sessions; move huge JSONL out of active sessions; avoid long logs in one thread. |
+| `config.toml` contains NUL bytes | Config write corruption | B | Move corrupted config aside and recreate; wait for atomic-write fix. |
+| Blank app or startup crash | Electron/app cache, auth, or crashpad-specific issue | B/C | Update/repair/reset app; collect Crashpad/WER; try CLI auth refresh if relevant. |
+| Antivirus blocks PowerShell/helper | Security product flags helper or generated PowerShell | B/C | Preserve detection details; apply minimal scoped allowlist only after review. |

@@ -1,0 +1,16 @@
+# Local dogfood and diagnostics output
+codex-windows-diagnostics*.json
+case-*-diagnostics*.json
+*.local.json
+
+# Codex local state and sensitive logs
+.codex/
+sessions/
+*.jsonl
+*.dmp
+
+# Windows / editor noise
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/

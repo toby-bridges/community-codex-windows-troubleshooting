@@ -1,0 +1,87 @@
+name: Codex Windows error report
+description: Report a Codex-on-Windows error with redacted diagnostics
+title: "[case]: "
+labels:
+  - needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for contributing. This is an unofficial community guide, not OpenAI support.
+
+        Do not paste API keys, tokens, cookies, private repo names, raw `.codex` session files, or screenshots containing personal information.
+  - type: textarea
+    id: error
+    attributes:
+      label: Exact error text
+      description: Paste the exact error block, redacted if needed.
+      placeholder: |
+        [info] Starting worktree creation
+        fatal: invalid reference: master
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Codex surface
+      options:
+        - Windows app
+        - CLI on Windows
+        - IDE extension
+        - WSL
+        - Browser
+        - Chrome extension
+        - Computer Use
+        - Unsure
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version family
+      description: Example: Windows 11 24H2, Windows 10 22H2, Windows Insider. Do not include hostnames or usernames.
+    validations:
+      required: false
+  - type: input
+    id: codex-version
+    attributes:
+      label: Codex version
+      description: App or CLI version if available.
+    validations:
+      required: false
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Redacted diagnostics
+      description: Paste relevant output from the read-only diagnostic script after redaction.
+      placeholder: |
+        powershell -NoProfile -ExecutionPolicy Bypass -File ".\skills\codex-windows-troubleshooter\scripts\collect-codex-windows-diagnostics.ps1" -Workspace "<WORKSPACE>"
+    validations:
+      required: false
+  - type: textarea
+    id: links
+    attributes:
+      label: Related upstream issues or sources
+      description: Link related openai/codex issues, docs, Reddit/V2EX posts, or prior reports.
+    validations:
+      required: false
+  - type: dropdown
+    id: evidence
+    attributes:
+      label: Evidence level
+      description: Pick the strongest current evidence level.
+      options:
+        - A - official docs or official engineering post
+        - B - reproducible openai/codex issue plus system behavior
+        - C - community report only
+        - D - inference, needs reproduction
+        - Unsure
+    validations:
+      required: true
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround status
+      description: What did you try, and was it safe/reversible?
+    validations:
+      required: false

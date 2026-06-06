@@ -1,0 +1,31 @@
+# Codex Windows Dogfood Matrix
+
+更新日期：2026-06-05  
+运行 ID：`20260605-212339`  
+策略：只读优先 + 本机真实状态 + `%TEMP%` 安全 fixture。  
+状态：16/16 case 达到目标等级；runner 临时目录已清理。
+
+等级定义：
+
+- `L0`：证据核查，刷新官方/GitHub/社区来源状态。
+- `L1`：本机只读诊断，不修改真实项目、`.codex`、Store、WSL、杀软或配置。
+- `L2`：安全复现，只写入 `%TEMP%\codex-windows-dogfood\...` 临时 fixture。
+
+| Case ID | 指南章节 | 错误签名 | 目标等级 L0/L1/L2 | 实际等级 | 证据来源 | 本机命令 | 结论 | 是否需要补指南/skill |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| C001 | 2. Worktree 创建失败 | `fatal: invalid reference: master/main/feature` | L2 | L2 | `%TEMP%` Git fixtures；[#12346](https://github.com/openai/codex/issues/12346)=OPEN；[#22635](https://github.com/openai/codex/issues/22635)=OPEN | `git worktree add --detach <tmp> <ref>` | 已验证：unborn branch、无 `main`、remote-only 短名都会触发 `invalid reference`。 | 已补指南和 skill；本轮无需再补。 |
+| C002 | 3. Computer Use / Browser 插件不可用 | `Computer Use plugins unavailable` / marketplace missing | L1 | L1 | [#26536](https://github.com/openai/codex/issues/26536)=OPEN；[#26501](https://github.com/openai/codex/issues/26501)=OPEN；[#25220](https://github.com/openai/codex/issues/25220)=OPEN；[#26109](https://github.com/openai/codex/issues/26109)=OPEN；[#22114](https://github.com/openai/codex/issues/22114)=OPEN | `Test-Path` bundled marketplace；inspect plugin cache/processes | 部分验证：本机 marketplace 存在，plugin cache 存在；未删除或重建缓存。 | 不需要。 |
+| C003 | 4. Windows 10 Computer Use 截图失败 | `SetIsBorderRequired failed 0x80004002` | L0 | L0 | [#25178](https://github.com/openai/codex/issues/25178)=OPEN；[#25411](https://github.com/openai/codex/issues/25411)=CLOSED | GitHub issue status + OS build family check | 仅证据核查：本机不属于 Windows 10 专用复现矩阵。 | 不需要。 |
+| C004 | 5. `spawn setup refresh` / `os error 740` | `spawn setup refresh` / `os error 740` | L1 | L1 | [#24050](https://github.com/openai/codex/issues/24050)=OPEN；[#26477](https://github.com/openai/codex/issues/26477)=OPEN；[#26158](https://github.com/openai/codex/issues/26158)=OPEN | collect diagnostics；search app install for `codex-windows-sandbox-setup.exe` | 部分验证：本机只读采集版本/config/helper 线索；找到 1 个 setup helper；未切 sandbox、未改 manifest。 | 不需要。 |
+| C005 | 6. 其他 Windows sandbox 启动错误 | `1326/1909` / `1344` / `program not found` | L1 | L1 | [#18620](https://github.com/openai/codex/issues/18620)=OPEN；[#26438](https://github.com/openai/codex/issues/26438)=OPEN；[#23194](https://github.com/openai/codex/issues/23194)=OPEN | collect diagnostics；inspect config/Appx/`codex doctor` | 部分验证：未强制复现 sandbox 用户/DACL 错误；只读状态可用于 issue 模板。 | 不需要。 |
+| C006 | 7. 网络、DNS、npm、代理 | sandbox DNS/npm/proxy failure | L1 | L1 | [#18675](https://github.com/openai/codex/issues/18675)=OPEN；[#25207](https://github.com/openai/codex/issues/25207)=OPEN；[#25117](https://github.com/openai/codex/issues/25117)=OPEN | inspect config preview and proxy-env presence flags | 部分验证：已只读检查代理变量是否存在；未修改代理或 `network_access`。 | 不需要。 |
+| C007 | 8. WSL / Windows 混合模式 | WSL path / `CODEX_HOME` split-brain | L1 | L1 | [#25216](https://github.com/openai/codex/issues/25216)=OPEN；[#22759](https://github.com/openai/codex/issues/22759)=OPEN；[#22376](https://github.com/openai/codex/issues/22376)=OPEN；[#24884](https://github.com/openai/codex/issues/24884)=OPEN；[#26096](https://github.com/openai/codex/issues/26096)=OPEN | `wsl --status`；`wsl -l -v`；inspect `CODEX_HOME`/`WSL_DISTRO_NAME` | 部分验证：WSL status/list 命令可运行；`WSL_DISTRO_NAME` 为空；未改 WSL 或 `CODEX_HOME`。 | 不需要。 |
+| C008 | 9. PowerShell / Shell / 编码 / 用户名 | PowerShell host / encoding / execution policy | L1 | L1 | [#13917](https://github.com/openai/codex/issues/13917)=CLOSED；[#19629](https://github.com/openai/codex/issues/19629)=OPEN；[#16268](https://github.com/openai/codex/issues/16268)=OPEN | `Get-Command pwsh/powershell`；`Get-ExecutionPolicy -List`；inspect username path | 部分验证：只读检查 PowerShell version、命令位置和执行策略；未改执行策略。 | 不需要。 |
+| C009 | 10. 长会话、历史记录、内存、启动崩溃 | `RangeError` / large session JSONL | L1 | L1 | [#22004](https://github.com/openai/codex/issues/22004)=OPEN；[#25430](https://github.com/openai/codex/issues/25430)=OPEN；[#26104](https://github.com/openai/codex/issues/26104)=OPEN | scan `%USERPROFILE%\.codex\sessions` largest JSONL | 部分验证：已只读扫描 session 大小；未移动历史；公开矩阵不保留具体本机大小。 | 不需要。 |
+| C010 | 11. UI 透明、最大化、卡顿 | maximized transparent/freezing UI | L0 | L0 | [#25513](https://github.com/openai/codex/issues/25513)=OPEN；[#20867](https://github.com/openai/codex/issues/20867)=OPEN；[#26401](https://github.com/openai/codex/issues/26401)=OPEN | GitHub issue status only | 仅证据核查：UI 症状需用户再次遇到时记录截图；本轮不操作桌面 UI。 | 不需要。 |
+| C011 | 12. 配置文件损坏 | `config.toml` NUL / key with no value | L2 | L2 | `%TEMP%` bad config fixtures；[#26421](https://github.com/openai/codex/issues/26421)=OPEN | create temp bad config fixtures；detect NUL and missing equals | 已验证：临时 fixture 可检测 NUL 和缺少等号的坏 TOML，不触碰真实 config。 | 已补 diagnostics `configHealth`。 |
+| C012 | 13. 启动空白、直接闪退、Crashpad dump | blank/spinner/crashpad dump | L1 | L1 | [#19352](https://github.com/openai/codex/issues/19352)=OPEN；[#25912](https://github.com/openai/codex/issues/25912)=OPEN | readonly scan `%LOCALAPPDATA%` CrashDumps/Packages for codex/crashpad | 部分验证：已只读扫描 crash candidates；未 repair/reset app；公开矩阵不保留具体本机数量。 | 不需要。 |
+| C013 | 14. 杀软/Defender/企业安全软件拦截 | Norton/Symantec/Defender blocks helper | L0 | L0 | [#25425](https://github.com/openai/codex/issues/25425)=OPEN；[#26194](https://github.com/openai/codex/issues/26194)=OPEN；[#26218](https://github.com/openai/codex/issues/26218)=OPEN | GitHub issue status only | 仅证据核查：不模拟恶意/混淆命令，不改白名单。 | 不需要。 |
+| C014 | 15. Microsoft Store / 安装位置 / ARM64 | Store install path / ARM64 / non-C drive | L1 | L1 | [#17491](https://github.com/openai/codex/issues/17491)=OPEN | `Get-AppxPackage OpenAI.Codex`；`winget list --name Codex`；inspect architecture | 部分验证：已只读采集 Appx version 和 CPU arch；未改安装位置；公开矩阵不保留具体本机版本。 | 不需要。 |
+| C015 | 16. 报告 issue 模板 | issue report completeness/redaction | L2 | L2 | `%TEMP%` redacted issue draft fixture | generate temp redacted issue draft fixture | 已验证：生成脱敏 issue draft fixture，`redacted=True`，`bytes=627`。 | 不需要。 |
+| C016 | 17. 当前优先级 | P0/P1/P2 priority review | L0 | L0 | C001-C015 dogfood outputs | review case outcomes against guide priority list | 仅证据核查：P0/P1/P2 与本轮证据一致；C001 保持 P1，P0 仍是 sandbox 740、plugin marketplace、large session。 | 不需要。 |

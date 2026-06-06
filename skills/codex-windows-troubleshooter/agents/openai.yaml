@@ -1,0 +1,4 @@
+interface:
+  display_name: "Community Codex Windows Troubleshooter"
+  short_description: "Community Codex Windows debugging"
+  default_prompt: "Diagnose this Codex Windows error from logs, screenshots, local config, and known issue references."
