@@ -1,9 +1,9 @@
 # Codex Windows Dogfood Matrix
 
 更新日期：2026-06-06
-运行 ID：`20260605-212339` + 2026-06-06 manual C017-C019 triage
+运行 ID：`20260605-212339` + 2026-06-06 manual C017-C020 triage
 策略：只读优先 + 本机真实状态 + `%TEMP%` 安全 fixture。
-状态：19/19 case 达到目标等级；runner 临时目录已清理。
+状态：20/20 case 达到目标等级；runner 临时目录已清理。
 
 等级定义：
 
@@ -31,4 +31,5 @@
 | C017 | 13/15. LTSC + Store/MSIX + hosts 劫持 | Windows 11 LTSC 2024, no Store UI, MSIX installed, app still will not open | L1 | L1 | X community case；Microsoft LTSC Store Access docs；Microsoft MSIX troubleshooting docs | inspect Store/App Installer/VCLibs/Windows App Runtime packages; inspect hosts; resolve Microsoft/Store/login DNS | 部分验证：根因链已映射为 LTSC/Store/MSIX dependencies/hosts-DNS 叠加；本机只读 diagnostics 已支持 hosts 和 Store runtime dependency 检查。 | 已补指南和 skill。 |
 | C018 | 5/15. Store 检查更新卡住 + MSIX 绕过 + sandbox 授权失败 | Microsoft Store stuck on checking updates; direct MSIX install works; sandbox authorization depends on path | L1 | L1 | X community case；OpenAI Windows sandbox ACL model；Microsoft MSIX troubleshooting docs | inspect Appx `InstallLocation`; inspect workspace path attributes; flag non-C drive/OneDrive/EFS/reparse point risk | 部分验证：根因链已映射为 Store 更新渠道问题 + MSIX 安装绕过 + Windows sandbox 路径/ACL 授权边界。 | 已补指南和 skill。 |
 | C019 | 13/15. 精简版 Windows + Store 依赖缺失 | Slim/debloated Windows; Store dependencies repaired after system update | L1 | L1 | [#21538](https://github.com/openai/codex/issues/21538), [#24010](https://github.com/openai/codex/issues/24010)；X community case；Microsoft Store download failure docs；Microsoft MSIX/framework package docs | inspect Store/App Installer/VCLibs/Windows App Runtime packages; inspect Store policy; inspect AppX/Store/Update services | 部分验证：根因链已映射为精简系统组件缺失/禁用 + Store/MSIX framework dependencies；本机只读 diagnostics 已支持 package、policy、service 检查。 | 已补指南和 skill。 |
-| C016 | 17. 当前优先级 | P0/P1/P2 priority review | L0 | L0 | C001-C015 + C017-C019 dogfood outputs | review case outcomes against guide priority list | 仅证据核查：P0/P1/P2 与本轮证据一致；C001 保持 P1，P0 仍是 sandbox 740、plugin marketplace、large session；C017/C018/C019 保持 C 级 community leads。 | 不需要。 |
+| C020 | 15. Microsoft Store / winget 安装链路 | `'winget' is not recognized` while installing Codex from `msstore` | L1 | L1 | Microsoft WinGet docs；microsoft/winget-cli troubleshooting；X community case | inspect `Get-Command winget`; inspect App Installer package; inspect WindowsApps alias and PATH; run `winget --version` | 部分验证：根因链已映射为 WinGet/App Installer/PATH/App Execution Alias/per-user registration 问题；本机只读 diagnostics 已支持 winget package、alias、PATH 和 version 检查。 | 已补指南和 skill。 |
+| C016 | 17. 当前优先级 | P0/P1/P2 priority review | L0 | L0 | C001-C015 + C017-C020 dogfood outputs | review case outcomes against guide priority list | 仅证据核查：P0/P1/P2 与本轮证据一致；C001 保持 P1，P0 仍是 sandbox 740、plugin marketplace、large session；C017-C020 保持 community leads，C020 的 WinGet 故障类有官方 A 级证据。 | 不需要。 |

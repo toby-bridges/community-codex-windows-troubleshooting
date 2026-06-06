@@ -499,10 +499,13 @@ New-Item -ItemType File "$env:USERPROFILE\.codex\config.toml"
 - Microsoft MSIX troubleshooting 文档说明，手动安装 MSIX 时可能缺 VCLibs、Windows App SDK / Windows App Runtime、.NET Native 等 framework package，表现为安装失败或安装后启动崩溃。参考：[MSIX troubleshooting guide](https://learn.microsoft.com/en-us/windows/msix/msix-troubleshooting-guide)。
 - Microsoft Store 下载失败文档要求先检查 Microsoft Store Appx 包及 dependencies，并说明完全卸载 Microsoft Store 不是受支持路径。参考：[Troubleshoot Microsoft Store app download failures](https://learn.microsoft.com/en-us/troubleshoot/windows-client/shell-experience/troubleshooting-microsoft-store-apps-download-failure)。
 - Windows App SDK / MSIX 文档说明 packaged app 可能依赖 framework packages，例如 Windows App SDK、WinUI、VCLibs、DirectX Runtime；脱离 Store 分发时，依赖分发和注册要额外处理。参考：[MSIX framework packages](https://learn.microsoft.com/en-us/windows/apps/desktop/modernize/framework-packages/framework-packages-overview)。
+- Microsoft WinGet 文档说明，`winget` 是 Windows Package Manager CLI，由 App Installer 提供；支持 Windows 10 1809 / build 17763 及以上，但首次登录后可能需要等待 Store 异步注册或手动注册 App Installer。参考：[Use WinGet](https://learn.microsoft.com/en-us/windows/package-manager/winget/)。
+- Microsoft winget-cli troubleshooting 明确记录 `'winget' is not recognized as an internal or external command`，常见原因包括 App Installer 版本不含 WinGet、App Execution Alias 被关闭、`%LOCALAPPDATA%\Microsoft\WindowsApps` 不在 PATH、per-user App Installer 注册不匹配或 App Installer 包损坏。参考：[winget-cli troubleshooting](https://github.com/microsoft/winget-cli/blob/master/doc/troubleshooting/README.md)。
 - Reddit 中文用户报告：Windows 默认新应用安装位置改到 D 盘后，in-app browser 不可用；恢复默认到 C 盘、卸载重装后恢复。来源：[windows上的codex安装后无法使用应用内的浏览器](https://www.reddit.com/user/xzjpanda/comments/1tp4hcv/windows%E4%B8%8A%E7%9A%84codex%E5%AE%89%E8%A3%85%E5%90%8E%E6%97%A0%E6%B3%95%E4%BD%BF%E7%94%A8%E5%BA%94%E7%94%A8%E5%86%85%E7%9A%84%E6%B5%8F%E8%A7%88%E5%99%A8/)。
 - X 社区 case：给 Windows 11 LTSC 2024 用户手装 Codex MSIX、补 Store 相关包、再从 Store 安装 Codex 仍打不开，最后发现 hosts 文件中 Microsoft 相关域名被劫持。证据等级 C，作为“LTSC/Store/网络解析叠加”的排查线索，不单独证明 Codex bug。
 - X 社区 case：Microsoft Store 一直卡在“检查更新”，最终通过直接下载 MSIX 才成功安装；但还需要注意安装目录，否则 Windows sandbox 授权会失败。证据等级 C，作为“Store 更新卡住 + MSIX 绕过 + 路径/ACL 授权边界”的排查线索。
 - X 社区 case：第三方精简版 Windows 上 Codex/Store 依赖问题，最终通过更新系统并逐项恢复 Microsoft Store 依赖解决。证据等级 C，作为“精简系统缺组件”的排查线索，不单独证明 Codex bug。
+- X 社区 case：用户执行 `winget install codex -s msstore` 时出现“winget 不是内部或外部命令，也不是可运行的程序或批处理文件”。如果错误文本指向 `winget` 不存在，问题发生在命令解析阶段，通常不是 `codex` 包名或 `-s msstore` 参数写错，而是 WinGet/App Installer/PATH/alias 环境问题。
 - GitHub issue [#21538](https://github.com/openai/codex/issues/21538) 记录企业环境无法访问 Microsoft Store、希望提供非 Store installer 的诉求；[#24010](https://github.com/openai/codex/issues/24010) 记录 Store 更新可检测但无法下载时启动崩溃的报告。
 - Windows ARM64 仍以 x64 emulation 为主，有性能/电池/二进制缺失讨论。代表 issue：[#17491](https://github.com/openai/codex/issues/17491)。
 
@@ -513,6 +516,7 @@ New-Item -ItemType File "$env:USERPROFILE\.codex\config.toml"
 - LTSC/无 Store UI 场景先确认这四层：系统版本是否 LTSC、Store/App Installer 是否存在、MSIX framework dependencies 是否完整、hosts/DNS 是否能正常解析 Microsoft/Store/login 域名。
 - Store 卡在“检查更新”时，先把它作为 Store/Windows Update/网络/缓存层问题处理；MSIX 可以作为临时绕过安装渠道，但不是默认推荐通用路径。若走 MSIX，需要额外核查依赖包和安装/工作目录对 Windows sandbox ACL 是否友好。
 - 精简版/第三方裁剪系统先确认系统组件是否被删：Microsoft Store、Desktop App Installer、VCLibs、Windows App Runtime、Windows Update、BITS、Delivery Optimization、AppX Deployment Service、Client License Service。缺失过多时，优先修复/升级系统，而不是继续叠加非官方依赖包。
+- `winget` 不被识别时，先确认命令拼写和 shell 原样输入；如果仍报 `winget` 不存在，按 WinGet 本身排查：App Installer 是否安装且版本足够、`winget.exe` alias 是否存在、App Execution Alias 是否打开、`%LOCALAPPDATA%\Microsoft\WindowsApps` 是否在 PATH、当前用户是否已注册 App Installer。不要先纠结 Codex 包名。
 - ARM64 社区 repackaging 只能作为研究线索，不作为默认推荐。
 
 只读排查命令：
@@ -527,6 +531,11 @@ Get-Service AppXSvc,ClipSVC,InstallService,wuauserv,BITS,DoSvc |
   Select-Object Name,Status,StartType
 Get-ItemProperty HKLM:\SOFTWARE\Policies\Microsoft\WindowsStore -ErrorAction SilentlyContinue
 Get-ItemProperty HKCU:\SOFTWARE\Policies\Microsoft\WindowsStore -ErrorAction SilentlyContinue
+Get-Command winget -ErrorAction SilentlyContinue
+winget --version
+Get-AppxPackage Microsoft.DesktopAppInstaller | Select-Object Name,Version,PackageFullName,InstallLocation
+Test-Path "$env:LOCALAPPDATA\Microsoft\WindowsApps\winget.exe"
+($env:PATH -split ';') -contains "$env:LOCALAPPDATA\Microsoft\WindowsApps"
 Get-Content "$env:WINDIR\System32\drivers\etc\hosts" |
   Select-String -Pattern "microsoft|windows|store|msft|live.com|microsoftonline|login|aka.ms"
 Resolve-DnsName www.microsoft.com

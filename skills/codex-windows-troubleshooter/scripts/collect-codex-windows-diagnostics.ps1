@@ -138,6 +138,37 @@ function Get-StorePolicySummary {
     return $results
 }
 
+function Test-PathContainsEntry {
+    param([string]$Target)
+
+    if (-not $Target -or -not $env:PATH) {
+        return $false
+    }
+
+    try {
+        $targetFull = [System.IO.Path]::GetFullPath($Target).TrimEnd("\")
+    } catch {
+        $targetFull = $Target.TrimEnd("\")
+    }
+
+    foreach ($entry in ($env:PATH -split [System.IO.Path]::PathSeparator)) {
+        if (-not $entry) {
+            continue
+        }
+        $expanded = [System.Environment]::ExpandEnvironmentVariables($entry)
+        try {
+            $entryFull = [System.IO.Path]::GetFullPath($expanded).TrimEnd("\")
+        } catch {
+            $entryFull = $expanded.TrimEnd("\")
+        }
+        if ($entryFull.Equals($targetFull, [System.StringComparison]::OrdinalIgnoreCase)) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
 function Get-HostsMicrosoftEntries {
     $hostsPath = Join-Path $env:WINDIR "System32\drivers\etc\hosts"
     $patterns = '(?i)(microsoft|windows|store|msft|live\.com|microsoftonline|login|aka\.ms)'
@@ -323,6 +354,20 @@ $result.windowsServices.storeRelated = Get-ServiceSummary -Names @(
     "DoSvc"
 )
 $result.windowsPackages.storePolicy = Get-StorePolicySummary
+$localWindowsApps = if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps" } else { $null }
+try {
+    $result.windowsPackages.winget = [ordered]@{
+        appInstaller = @(
+            Get-AppxPackage Microsoft.DesktopAppInstaller -ErrorAction SilentlyContinue |
+                Select-Object Name, Version, PackageFullName, InstallLocation
+        )
+        localWindowsApps = $localWindowsApps
+        localWindowsAppsOnPath = (Test-PathContainsEntry -Target $localWindowsApps)
+        localWingetAlias = if ($localWindowsApps) { Get-FileSummary -Path (Join-Path $localWindowsApps "winget.exe") } else { $null }
+    }
+} catch {
+    $result.windowsPackages.winget = [ordered]@{ error = $_.Exception.Message }
+}
 
 $result.network.hostsMicrosoftEntries = Get-HostsMicrosoftEntries
 $result.network.microsoftDns = Resolve-DnsSummary -Names @(
@@ -334,6 +379,7 @@ $result.network.microsoftDns = Resolve-DnsSummary -Names @(
 $result.commands.codexVersion = Invoke-Capture -File "codex" -Arguments @("--version")
 $result.commands.codexDoctor = Invoke-Capture -File "codex" -Arguments @("doctor", "--summary")
 $result.commands.gitVersion = Invoke-Capture -File "git" -Arguments @("--version")
+$result.commands.wingetVersion = Invoke-Capture -File "winget" -Arguments @("--version")
 $result.commands.locations = Get-CommandLocations -Names @("codex", "git", "pwsh", "powershell", "winget", "wsl")
 
 $result.workspacePath = Get-WorkspacePathRisk -Path $Workspace

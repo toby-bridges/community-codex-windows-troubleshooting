@@ -229,3 +229,25 @@ C011/C015 fixture 结果：
 - `official-baseline.md`：补 Microsoft Store dependencies、unsupported Store uninstall、MSIX framework packages 官方基线。
 - `error-matrix.md`：新增 slim/debloated Windows + Store dependency repair 条目。
 - diagnostics：已补 Store policy 和 Store/AppX/Update 相关服务只读采集。
+
+## 2026-06-06 / Case 020 / WinGet not recognized during Codex Store install
+
+输入：
+
+- 来源：X 社区 case，用户转述。
+- 场景：用户在终端执行 `winget install codex -s msstore` 安装 Codex 时，出现本地化错误：“winget 不是内部或外部命令，也不是可运行的程序或批处理文件”。
+
+根因分析：
+
+- 证据等级：WinGet 故障类为 A；Codex 安装场景为 C。
+- 不是优先判定为复制粘贴错。只要错误指向 `winget` 本身不被识别，命令还没进入 Codex 包名或 `msstore` source 解析阶段。
+- Microsoft 文档说明，WinGet 由 App Installer 提供，支持 Windows 10 1809 / build 17763 及以上；首次登录后可能需要等待 Store 注册或手动注册。
+- winget-cli troubleshooting 说明，此错误常见于 App Installer 版本不含 WinGet、App Execution Alias 被关闭、`%LOCALAPPDATA%\Microsoft\WindowsApps` 不在 PATH、App Installer per-user 注册不匹配或包损坏。
+- 结论：这类 case 应先检查 `Get-Command winget`、`winget --version`、App Installer 包、WindowsApps alias、PATH、当前用户 App Installer 注册，再讨论 Codex 包 id 或 Store source。
+
+已更新：
+
+- `WINDOWS-CODEX-ERROR-GUIDE.md`：补入 winget not recognized 的安装链路排查。
+- `official-baseline.md`：补 Microsoft WinGet/App Installer 官方基线。
+- `error-matrix.md`：新增 winget not recognized 条目。
+- diagnostics：已补 winget version、App Installer package、WindowsApps alias、PATH 只读采集。
