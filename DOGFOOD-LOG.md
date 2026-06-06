@@ -165,3 +165,25 @@ C011/C015 fixture 结果：
 - 指南：当前无需调整优先级；C001/C011 相关结论已覆盖。
 - skill：新增 runner 脚本后需要在 `SKILL.md` 中补充 dogfood 入口。
 - diagnostics：C011 提出的 config corruption 检测已补为 `configHealth`。
+
+## 2026-06-06 / Case 017 / Windows 11 LTSC + Store/MSIX + hosts hijack
+
+输入：
+
+- 来源：X 社区 case，用户转述。
+- 场景：Windows 11 LTSC 2024，无 Store UI；尝试手装 Codex MSIX、补 Store 相关包、再从 Store 安装 Codex，桌面 app 仍打不开；最后发现 hosts 文件中 Microsoft 相关域名被劫持。
+
+根因分析：
+
+- 证据等级：C。
+- 表层诱因：LTSC 环境没有正常 Store UI，导致用户绕到 MSIX/Store 依赖安装路径。
+- 中间风险：手动 MSIX 安装可能缺 VCLibs、Windows App Runtime、App Installer、Store 组件等依赖。
+- 最终根因：hosts 文件劫持 Microsoft/Store/login 相关域名，导致 Store 或 Codex app 的下载、授权、依赖、更新或启动链路失败。
+- 结论：不能把这类 case 简化成“LTSC 不支持”或“缺 Store”。排查要同时覆盖系统版本、Store/App Installer/MSIX dependencies、hosts/DNS。
+
+已更新：
+
+- `WINDOWS-CODEX-ERROR-GUIDE.md`：补入 LTSC/Store/MSIX/hosts 排查路径。
+- `error-matrix.md`：新增 Windows 11 LTSC / no Store UI / app will not open 条目。
+- `official-baseline.md`：补 Microsoft LTSC Store UI 和 MSIX dependency 官方基线。
+- diagnostics：计划补 hosts 和 Store runtime package 只读采集。

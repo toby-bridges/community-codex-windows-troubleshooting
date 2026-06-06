@@ -452,6 +452,7 @@ New-Item -ItemType File "$env:USERPROFILE\.codex\config.toml"
 - 打开后 blank / spinner。
 - Store app 几秒后退出，Task Manager 里 Suspended 后消失。
 - Crashpad reports 生成 `.dmp`。
+- Windows 11 LTSC / IoT LTSC 机器上手动安装 MSIX、补 Store 组件后仍打不开。
 
 代表 issue：
 
@@ -462,11 +463,13 @@ New-Item -ItemType File "$env:USERPROFILE\.codex\config.toml"
 
 - 先用 CLI 登录/刷新 auth，再开桌面应用（社区有成功个例）。
 - 清理 app cache、Repair/Reset、Store 更新。
+- 检查 `C:\Windows\System32\drivers\etc\hosts` 是否劫持 Microsoft / Store / login 相关域名。社区 X case 中，Windows 11 LTSC 2024 无 Store UI、手装 MSIX 和补 Store 依赖都未解决，最终发现 hosts 文件里 Microsoft 相关域名被劫持。
 - 若有 Crashpad dump，提交 GitHub issue 或 `/feedback`，不要只写“闪退”。
 
 占位：
 
 - 无通用解决方案；需要具体 dump 和日志。
+- LTSC + Store 组件 + hosts 劫持叠加时，不能只按“缺 Store”处理；需要同时核查 App Installer / Store / Windows App Runtime 依赖和网络解析。
 
 ## 14. 杀软/Defender/企业安全软件拦截
 
@@ -487,14 +490,31 @@ New-Item -ItemType File "$env:USERPROFILE\.codex\config.toml"
 安装与更新：
 
 - 官方 Windows app 当前走 Microsoft Store / winget。V2EX 用户也讨论过是否有非商店版：[windows 的 codex 有非商店版的么？](https://www.v2ex.com/t/1207852)。
+- Microsoft 文档说明，LTSC 场景可能有 Store 服务用于更新预装应用，但不一定包含用于浏览和安装应用的 Store UI。参考：[Microsoft Store Access](https://learn.microsoft.com/en-us/windows/iot/iot-enterprise/customize/microsoft-store-access)。
+- Microsoft MSIX troubleshooting 文档说明，手动安装 MSIX 时可能缺 VCLibs、Windows App SDK / Windows App Runtime、.NET Native 等 framework package，表现为安装失败或安装后启动崩溃。参考：[MSIX troubleshooting guide](https://learn.microsoft.com/en-us/windows/msix/msix-troubleshooting-guide)。
 - Reddit 中文用户报告：Windows 默认新应用安装位置改到 D 盘后，in-app browser 不可用；恢复默认到 C 盘、卸载重装后恢复。来源：[windows上的codex安装后无法使用应用内的浏览器](https://www.reddit.com/user/xzjpanda/comments/1tp4hcv/windows%E4%B8%8A%E7%9A%84codex%E5%AE%89%E8%A3%85%E5%90%8E%E6%97%A0%E6%B3%95%E4%BD%BF%E7%94%A8%E5%BA%94%E7%94%A8%E5%86%85%E7%9A%84%E6%B5%8F%E8%A7%88%E5%99%A8/)。
+- X 社区 case：给 Windows 11 LTSC 2024 用户手装 Codex MSIX、补 Store 相关包、再从 Store 安装 Codex 仍打不开，最后发现 hosts 文件中 Microsoft 相关域名被劫持。证据等级 C，作为“LTSC/Store/网络解析叠加”的排查线索，不单独证明 Codex bug。
 - Windows ARM64 仍以 x64 emulation 为主，有性能/电池/二进制缺失讨论。代表 issue：[#17491](https://github.com/openai/codex/issues/17491)。
 
 建议：
 
 - 优先 Store 官方渠道。
 - 非 C 盘 Store app、企业重定向、EFS、OneDrive、加密目录都应作为插件/Browser/Computer Use 问题的排查变量。
+- LTSC/无 Store UI 场景先确认这四层：系统版本是否 LTSC、Store/App Installer 是否存在、MSIX framework dependencies 是否完整、hosts/DNS 是否能正常解析 Microsoft/Store/login 域名。
 - ARM64 社区 repackaging 只能作为研究线索，不作为默认推荐。
+
+只读排查命令：
+
+```powershell
+Get-ComputerInfo | Select-Object WindowsProductName, WindowsVersion, OsBuildNumber
+Get-AppxPackage Microsoft.WindowsStore,Microsoft.DesktopAppInstaller,Microsoft.VCLibs*,Microsoft.WindowsAppRuntime* |
+  Select-Object Name,Version,PackageFullName
+Get-Content "$env:WINDIR\System32\drivers\etc\hosts" |
+  Select-String -Pattern "microsoft|windows|store|msft|live.com|microsoftonline|login|aka.ms"
+Resolve-DnsName www.microsoft.com
+Resolve-DnsName login.microsoftonline.com
+Resolve-DnsName storeedgefd.dsx.mp.microsoft.com
+```
 
 ## 16. 报告 issue 模板
 

@@ -8,6 +8,7 @@ Use this file to anchor Codex Windows troubleshooting to stable official facts.
 - Native Windows environments use PowerShell and Windows sandbox. WSL environments use Linux/WSL behavior. Source: https://developers.openai.com/codex/windows
 - `CODEX_HOME` differs between native Windows and WSL unless explicitly configured. Native Windows default is `%USERPROFILE%\.codex`; WSL CLI default is Linux `~/.codex`.
 - WSL1 is not supported from Codex `0.115` onward; WSL2 is the supported WSL baseline.
+- Windows LTSC/IoT LTSC may include Store service behavior without the normal Store browsing UI. Do not assume manual MSIX install and Store restoration are enough; verify MSIX framework dependencies and Microsoft/Store/login DNS. Sources: https://learn.microsoft.com/en-us/windows/iot/iot-enterprise/customize/microsoft-store-access and https://learn.microsoft.com/en-us/windows/msix/msix-troubleshooting-guide
 
 ## Windows Sandbox
 

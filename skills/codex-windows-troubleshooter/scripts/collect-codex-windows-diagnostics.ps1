@@ -81,6 +81,73 @@ function Get-CommandLocations {
     return $locations
 }
 
+function Get-HostsMicrosoftEntries {
+    $hostsPath = Join-Path $env:WINDIR "System32\drivers\etc\hosts"
+    $patterns = '(?i)(microsoft|windows|store|msft|live\.com|microsoftonline|login|aka\.ms)'
+    if (-not (Test-Path -LiteralPath $hostsPath)) {
+        return [ordered]@{
+            path = $hostsPath
+            exists = $false
+            entries = @()
+        }
+    }
+
+    try {
+        $lineNumber = 0
+        $entries = @(
+            Get-Content -LiteralPath $hostsPath -ErrorAction Stop | ForEach-Object {
+                $lineNumber++
+                $trimmed = $_.Trim()
+                if ($trimmed -and -not $trimmed.StartsWith("#") -and $trimmed -match $patterns) {
+                    [ordered]@{
+                        line = $lineNumber
+                        text = $trimmed
+                    }
+                }
+            }
+        )
+        return [ordered]@{
+            path = $hostsPath
+            exists = $true
+            entryCount = $entries.Count
+            entries = @($entries | Select-Object -First 20)
+        }
+    } catch {
+        return [ordered]@{
+            path = $hostsPath
+            exists = $true
+            error = $_.Exception.Message
+            entries = @()
+        }
+    }
+}
+
+function Resolve-DnsSummary {
+    param([string[]]$Names)
+
+    $results = @()
+    foreach ($name in $Names) {
+        try {
+            $records = Resolve-DnsName -Name $name -ErrorAction Stop |
+                Where-Object { $_.IPAddress -or $_.NameHost } |
+                Select-Object -First 8 Name, Type, IPAddress, NameHost
+            $results += [ordered]@{
+                name = $name
+                ok = $true
+                records = @($records)
+            }
+        } catch {
+            $results += [ordered]@{
+                name = $name
+                ok = $false
+                error = $_.Exception.Message
+                records = @()
+            }
+        }
+    }
+    return $results
+}
+
 function Redact-Line {
     param([string]$Line)
     return ($Line `
@@ -114,6 +181,8 @@ $result = [ordered]@{
     git = [ordered]@{}
     powershell = [ordered]@{}
     wsl = [ordered]@{}
+    windowsPackages = [ordered]@{}
+    network = [ordered]@{}
     codexFiles = [ordered]@{}
     processes = @()
 }
@@ -136,6 +205,22 @@ try {
 } catch {
     $result.codexAppx = [ordered]@{ error = $_.Exception.Message }
 }
+
+try {
+    $result.windowsPackages.storeRuntime = @(
+        Get-AppxPackage Microsoft.WindowsStore, Microsoft.DesktopAppInstaller, Microsoft.VCLibs*, Microsoft.WindowsAppRuntime* -ErrorAction SilentlyContinue |
+            Select-Object Name, Version, PackageFullName, InstallLocation
+    )
+} catch {
+    $result.windowsPackages.storeRuntime = @([ordered]@{ error = $_.Exception.Message })
+}
+
+$result.network.hostsMicrosoftEntries = Get-HostsMicrosoftEntries
+$result.network.microsoftDns = Resolve-DnsSummary -Names @(
+    "www.microsoft.com",
+    "login.microsoftonline.com",
+    "storeedgefd.dsx.mp.microsoft.com"
+)
 
 $result.commands.codexVersion = Invoke-Capture -File "codex" -Arguments @("--version")
 $result.commands.codexDoctor = Invoke-Capture -File "codex" -Arguments @("doctor", "--summary")

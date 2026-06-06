@@ -60,3 +60,7 @@ repo:openai/codex is:issue "remote-only branch" worktree
 - https://github.com/openai/codex/issues/19629 - tool execution still initializes PowerShell.
 - https://github.com/openai/codex/issues/16268 - non-ASCII username corrupt HOME.
 - https://github.com/openai/codex/issues/17491 - Windows ARM64 emulation.
+
+## Community-only Leads
+
+- X community case, 2026-06-06: Windows 11 LTSC 2024 machine without Store UI; manual Codex MSIX install and later Store package restoration still left the desktop app unable to open; final root cause was a hijacked Microsoft-related hosts entry. Evidence level C until reproduced or mapped to an upstream issue.
