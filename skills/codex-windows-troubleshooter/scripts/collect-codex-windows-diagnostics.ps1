@@ -81,6 +81,63 @@ function Get-CommandLocations {
     return $locations
 }
 
+function Get-ServiceSummary {
+    param([string[]]$Names)
+
+    $services = @()
+    foreach ($name in $Names) {
+        try {
+            $service = Get-Service -Name $name -ErrorAction Stop
+            $services += [ordered]@{
+                name = $service.Name
+                displayName = $service.DisplayName
+                status = $service.Status.ToString()
+                startType = $service.StartType.ToString()
+            }
+        } catch {
+            $services += [ordered]@{
+                name = $name
+                error = $_.Exception.Message
+            }
+        }
+    }
+    return $services
+}
+
+function Get-StorePolicySummary {
+    $paths = @(
+        "HKLM:\SOFTWARE\Policies\Microsoft\WindowsStore",
+        "HKCU:\SOFTWARE\Policies\Microsoft\WindowsStore"
+    )
+    $results = @()
+    foreach ($path in $paths) {
+        try {
+            if (Test-Path -LiteralPath $path) {
+                $item = Get-ItemProperty -LiteralPath $path -ErrorAction Stop
+                $results += [ordered]@{
+                    path = $path
+                    exists = $true
+                    removeWindowsStore = $item.RemoveWindowsStore
+                    disableStoreApps = $item.DisableStoreApps
+                    autoDownload = $item.AutoDownload
+                }
+            } else {
+                $results += [ordered]@{
+                    path = $path
+                    exists = $false
+                }
+            }
+        } catch {
+            $results += [ordered]@{
+                path = $path
+                exists = $true
+                error = $_.Exception.Message
+            }
+        }
+    }
+    return $results
+}
+
 function Get-HostsMicrosoftEntries {
     $hostsPath = Join-Path $env:WINDIR "System32\drivers\etc\hosts"
     $patterns = '(?i)(microsoft|windows|store|msft|live\.com|microsoftonline|login|aka\.ms)'
@@ -223,6 +280,7 @@ $result = [ordered]@{
     powershell = [ordered]@{}
     wsl = [ordered]@{}
     windowsPackages = [ordered]@{}
+    windowsServices = [ordered]@{}
     network = [ordered]@{}
     codexFiles = [ordered]@{}
     processes = @()
@@ -255,6 +313,16 @@ try {
 } catch {
     $result.windowsPackages.storeRuntime = @([ordered]@{ error = $_.Exception.Message })
 }
+
+$result.windowsServices.storeRelated = Get-ServiceSummary -Names @(
+    "AppXSvc",
+    "ClipSVC",
+    "InstallService",
+    "wuauserv",
+    "BITS",
+    "DoSvc"
+)
+$result.windowsPackages.storePolicy = Get-StorePolicySummary
 
 $result.network.hostsMicrosoftEntries = Get-HostsMicrosoftEntries
 $result.network.microsoftDns = Resolve-DnsSummary -Names @(

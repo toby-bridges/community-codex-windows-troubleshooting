@@ -208,3 +208,24 @@ C011/C015 fixture 结果：
 - `WINDOWS-CODEX-ERROR-GUIDE.md`：补入 Store 检查更新卡住、MSIX 绕过、安装/工作目录 sandbox 授权风险。
 - `error-matrix.md`：新增 Store checking updates + MSIX + sandbox authorization 条目。
 - diagnostics：已补 workspace path attribute / reparse point / OneDrive / drive root 风险采集。
+
+## 2026-06-06 / Case 019 / Slim Windows + Store dependency repair
+
+输入：
+
+- 来源：X 社区 case，用户转述。
+- 场景：系统不能太精简；如果是精简版，需要更新/修复系统，并逐项解决 Microsoft Store 依赖问题后 Codex 才能工作。
+
+根因分析：
+
+- 证据等级：C。
+- 表层问题：第三方精简版 / debloated Windows 可能删除或禁用 Microsoft Store、Desktop App Installer、VCLibs、Windows App Runtime、Windows Update、BITS、Delivery Optimization、AppX Deployment Service、Client License Service 或 Store policy。
+- 官方事实边界：Microsoft Store 下载失败文档要求先检查 Store Appx 包及 dependencies，并说明完全卸载 Microsoft Store 不是受支持路径；MSIX / Windows App SDK 文档说明 packaged app 可能依赖 framework packages。
+- 结论：这类 case 不能简化成“Codex 不支持精简版”，应先定位缺失 package、禁用服务、Store policy 或 AppxDeployment 事件。缺失过多时，优先修复/升级到完整受支持系统，而不是叠加来源不明的依赖包。
+
+已更新：
+
+- `WINDOWS-CODEX-ERROR-GUIDE.md`：补入精简版 Windows / Store dependencies 排查路径。
+- `official-baseline.md`：补 Microsoft Store dependencies、unsupported Store uninstall、MSIX framework packages 官方基线。
+- `error-matrix.md`：新增 slim/debloated Windows + Store dependency repair 条目。
+- diagnostics：已补 Store policy 和 Store/AppX/Update 相关服务只读采集。

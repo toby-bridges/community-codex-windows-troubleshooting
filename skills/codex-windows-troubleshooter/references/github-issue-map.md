@@ -57,6 +57,8 @@ repo:openai/codex is:issue "remote-only branch" worktree
 - https://github.com/openai/codex/issues/26421 - zero-filled `config.toml`.
 - https://github.com/openai/codex/issues/19352 - Windows app blank.
 - https://github.com/openai/codex/issues/25912 - Store app crashes on launch.
+- https://github.com/openai/codex/issues/21538 - enterprise environments blocked from Microsoft Store ask for non-Store installer.
+- https://github.com/openai/codex/issues/24010 - Store update detected but cannot be downloaded, followed by launch crash.
 - https://github.com/openai/codex/issues/19629 - tool execution still initializes PowerShell.
 - https://github.com/openai/codex/issues/16268 - non-ASCII username corrupt HOME.
 - https://github.com/openai/codex/issues/17491 - Windows ARM64 emulation.
@@ -65,3 +67,4 @@ repo:openai/codex is:issue "remote-only branch" worktree
 
 - X community case, 2026-06-06: Windows 11 LTSC 2024 machine without Store UI; manual Codex MSIX install and later Store package restoration still left the desktop app unable to open; final root cause was a hijacked Microsoft-related hosts entry. Evidence level C until reproduced or mapped to an upstream issue.
 - X community case, 2026-06-06: Microsoft Store stuck on checking updates; direct MSIX download/install succeeded, but install/workspace directory still mattered because Windows sandbox authorization could fail. Evidence level C until reproduced or mapped to an upstream issue.
+- X community case, 2026-06-06: Third-party slim/debloated Windows image could not satisfy Microsoft Store dependencies until the system was updated/repaired and Store dependencies were restored with guided troubleshooting. Evidence level C until reproduced or mapped to a concrete AppxDeployment event or upstream issue.

@@ -10,15 +10,15 @@ Initial public release of the Community Codex Windows Troubleshooting Field Guid
   - Windows sandbox startup and `os error 740`
   - WSL / Windows path and `CODEX_HOME` split-brain
   - PowerShell, session, config, Store, and antivirus edge cases
-- Adds LTSC/Store/MSIX/hosts and Store checking update + sandbox path troubleshooting cases.
-- Adds a dogfood matrix covering C001-C018.
+- Adds LTSC/Store/MSIX/hosts, Store checking update + sandbox path, and slim Windows dependency troubleshooting cases.
+- Adds a dogfood matrix covering C001-C019.
 - Adds read-only local diagnostics for Windows Codex troubleshooting.
 - Adds safe `%TEMP%` fixtures for reversible reproduction of selected cases.
 - Adds issue templates, contribution rules, redaction rules, and security guidance.
 
 ## Dogfood Status
 
-- 18/18 guide cases reached their target coverage level.
+- 19/19 guide cases reached their target coverage level.
 - L2 fixture reproduction exists for:
   - C001 worktree invalid reference
   - C011 `config.toml` corruption

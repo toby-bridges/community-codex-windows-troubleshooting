@@ -243,6 +243,7 @@ $issueConfig = Get-IssueEvidence -Numbers @(26421)
 $issueCrash = Get-IssueEvidence -Numbers @(19352, 25912)
 $issueAv = Get-IssueEvidence -Numbers @(25425, 26194, 26218)
 $issueStore = Get-IssueEvidence -Numbers @(17491)
+$issueStoreInfra = Get-IssueEvidence -Numbers @(21538, 24010)
 
 $marketplaceExists = if ($diag) { [bool]$diag.codexFiles.bundledMarketplaceExists } else { $false }
 $pluginCacheExists = if ($diag) { [bool]$diag.codexFiles.pluginCacheExists } else { $false }
@@ -297,7 +298,9 @@ $cases += Add-Case -Id "C017" -Section "13/15. LTSC + Store/MSIX + hosts 劫持"
 
 $cases += Add-Case -Id "C018" -Section "5/15. Store 检查更新卡住 + MSIX 绕过 + sandbox 授权失败" -Signature "Microsoft Store stuck on checking updates; direct MSIX install works; sandbox authorization depends on path" -Target "L1" -Actual "L1" -Evidence "X community case plus Windows sandbox ACL model and Microsoft MSIX troubleshooting docs" -Command "inspect Appx InstallLocation and workspace path attributes/reparse/encryption/drive hints" -Conclusion "部分验证：只读 diagnostics now records workspace path risk hints for sandbox authorization. Public matrix should not keep machine-specific paths; local run captured hints privately." -NeedsUpdate "已补指南和 skill。"
 
-$cases += Add-Case -Id "C016" -Section "17. 当前优先级" -Signature "P0/P1/P2 priority review" -Target "L0" -Actual "L0" -Evidence "C001-C015 plus C017-C018 dogfood outputs" -Command "review case outcomes against guide priority list" -Conclusion "仅证据核查：P0/P1/P2 与本轮证据一致；C001 保持 P1，P0 仍是 sandbox 740、plugin marketplace、large session；C017/C018 保持 C 级 community leads。" -NeedsUpdate "不需要。"
+$cases += Add-Case -Id "C019" -Section "13/15. 精简版 Windows + Store 依赖缺失" -Signature "Slim/debloated Windows; Store dependencies repaired after system update" -Target "L1" -Actual "L1" -Evidence ((Format-IssueStates $issueStoreInfra) + "; X community case plus Microsoft Store download failure and MSIX framework package docs") -Command "inspect Store/App Installer/VCLibs/Windows App Runtime packages; inspect Store policy; inspect AppX/Store/Update services" -Conclusion "部分验证：只读 diagnostics now records Store policy and Store/AppX/Update service status. Public matrix should not keep machine-specific service state; local run captured it privately." -NeedsUpdate "已补指南和 skill。"
+
+$cases += Add-Case -Id "C016" -Section "17. 当前优先级" -Signature "P0/P1/P2 priority review" -Target "L0" -Actual "L0" -Evidence "C001-C015 plus C017-C019 dogfood outputs" -Command "review case outcomes against guide priority list" -Conclusion "仅证据核查：P0/P1/P2 与本轮证据一致；C001 保持 P1，P0 仍是 sandbox 740、plugin marketplace、large session；C017/C018/C019 保持 C 级 community leads。" -NeedsUpdate "不需要。"
 
 $result = [ordered]@{
     runId = $runId

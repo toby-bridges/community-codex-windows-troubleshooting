@@ -9,6 +9,7 @@ Use this file to anchor Codex Windows troubleshooting to stable official facts.
 - `CODEX_HOME` differs between native Windows and WSL unless explicitly configured. Native Windows default is `%USERPROFILE%\.codex`; WSL CLI default is Linux `~/.codex`.
 - WSL1 is not supported from Codex `0.115` onward; WSL2 is the supported WSL baseline.
 - Windows LTSC/IoT LTSC may include Store service behavior without the normal Store browsing UI. Do not assume manual MSIX install and Store restoration are enough; verify MSIX framework dependencies and Microsoft/Store/login DNS. Sources: https://learn.microsoft.com/en-us/windows/iot/iot-enterprise/customize/microsoft-store-access and https://learn.microsoft.com/en-us/windows/msix/msix-troubleshooting-guide
+- Third-party slim/debloated Windows images should be treated as environment-risk evidence, not a Codex root cause by themselves. Microsoft Store download troubleshooting checks the Store Appx package and dependencies, and Microsoft says completely uninstalling Microsoft Store is not supported. MSIX/Windows App SDK packages can depend on framework packages such as VCLibs and Windows App Runtime. Sources: https://learn.microsoft.com/en-us/troubleshoot/windows-client/shell-experience/troubleshooting-microsoft-store-apps-download-failure, https://learn.microsoft.com/en-us/windows/apps/desktop/modernize/framework-packages/framework-packages-overview, and https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/deploy-packaged-apps
 
 ## Windows Sandbox
 
