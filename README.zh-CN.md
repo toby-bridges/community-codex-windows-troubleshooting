@@ -69,6 +69,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\skills\codex-windows-trou
 - [GitHub Launch Checklist](./GITHUB-LAUNCH-CHECKLIST.md)
 - [Release Notes](./RELEASE_NOTES.md)
 
+## 相关项目
+
+- [CodexGuide](https://github.com/freestylefly/CodexGuide)：更完整的 Codex 学习路线和实践指南，适合入门、配置、工作流设计、团队 playbook 和通用使用场景。
+
+本仓库专注于 Codex on Windows 的报错、诊断、证据等级和安全排障。如果问题不是 Windows 专项故障，通常更适合先从 CodexGuide 开始。
+
 ## 推荐仓库名
 
 推荐 GitHub 仓库名：

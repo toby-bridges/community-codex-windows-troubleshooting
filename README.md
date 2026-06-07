@@ -92,6 +92,12 @@ Workarounds are not treated as solved unless they have repeatable verification o
 - [Release Notes](./RELEASE_NOTES.md)
 - [Chinese README](./README.zh-CN.md)
 
+## Related Projects
+
+- [CodexGuide](https://github.com/freestylefly/CodexGuide): a broader Codex learning and practice guide for beginners, creators, developers, and teams. Use it for onboarding, workflow design, configuration, and general Codex usage.
+
+This repository stays focused on Codex-on-Windows failures, diagnostics, evidence levels, and safe troubleshooting. If your question is not Windows-specific, CodexGuide is usually the better starting point.
+
 ## Repository Name
 
 Recommended GitHub repository name:
