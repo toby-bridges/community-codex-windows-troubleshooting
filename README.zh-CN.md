@@ -4,6 +4,8 @@
 
 > 非官方项目。本仓库不隶属于 OpenAI，也不代表 OpenAI 认可、赞助或背书。OpenAI、Codex、ChatGPT 及相关标识属于 OpenAI。本项目只在描述兼容性和排障范围时使用这些名称，不使用 OpenAI logo 或品牌素材。见 [Branding and Naming](./BRANDING.md)。
 
+[English](./README.md)
+
 ## 一句话总结
 
 这个 GitHub 项目可以帮助 Windows 上的 Codex 用户把常见报错定位到已核查的 GitHub issue 和安全排障步骤，从而少走弯路地恢复可用工作流。
@@ -42,6 +44,21 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\skills\codex-windows-trou
 
 公开提交 issue 前，先检查输出，删掉敏感路径、私有仓库名、token、邮箱和个人信息。
 
+## 贡献一个 case
+
+如果你遇到新的 Codex Windows 报错、发现已有结论过期，或者验证了某个 workaround，优先走下面这些入口：
+
+| 入口 | 适合情况 | 从这里开始 |
+| --- | --- | --- |
+| 报错反馈 | 你有准确报错文本、截图中的错误原文，或能稳定复现 | [提交脱敏 case report](https://github.com/toby-bridges/community-codex-windows-troubleshooting/issues/new?template=codex-windows-error.yml) |
+| 来源补充 | 你找到了相关 `openai/codex` issue、Reddit、V2EX、X、博客或中文社区帖子 | [补充来源线索](https://github.com/toby-bridges/community-codex-windows-troubleshooting/issues/new?template=codex-windows-error.yml) |
+| 解决方案验证 | 你在本机或临时 fixture 中安全验证了 workaround | [提交 Pull Request](./CONTRIBUTING.md) |
+| 指南修正 | 某个章节不准确、过时、步骤太危险，或缺少风险提示 | [查看贡献规则](./CONTRIBUTING.md) |
+
+一个高质量 case 通常包含：错误原文、Codex 使用入口（Windows App / CLI / WSL / Browser / Computer Use 等）、Windows 版本大类、Codex 版本、是否可复现、相关链接、尝试过的 workaround、是否只读或可逆。
+
+不要提交 API key、token、cookie、私有仓库名、完整 `.codex` session 文件、包含个人信息的截图、用户名路径、邮箱或未脱敏 crash dump。
+
 ## 高频错误入口
 
 | 错误签名 | 故障族群 | 从这里开始 |
@@ -75,29 +92,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\skills\codex-windows-trou
 
 本仓库专注于 Codex on Windows 的报错、诊断、证据等级和安全排障。如果问题不是 Windows 专项故障，通常更适合先从 CodexGuide 开始。
 
-## 推荐仓库名
-
-推荐 GitHub 仓库名：
-
-```text
-community-codex-windows-troubleshooting
-```
-
-推荐公开标题：
-
-```text
-Community Codex Windows Troubleshooting Field Guide
-```
-
-原因：
-
-- `codex windows troubleshooting` 是最直接的搜索意图。
-- 仓库名用 `community` 表达社区维护，README 和 disclaimer 继续明确写非官方，降低用户误以为这是 OpenAI 官方项目的风险。
-- `Field Guide` 保留研究和实践手册的质感。
-
 ## 贡献
 
-见 [CONTRIBUTING.md](./CONTRIBUTING.md)。不要提交密钥、token、私有仓库名、包含个人信息的截图，或完整 `.codex` session 文件。
+从 [贡献一个 case](#贡献一个-case) 开始；更完整的脱敏、证据等级、dogfood 和 PR 规则见 [CONTRIBUTING.md](./CONTRIBUTING.md)。
 
 ## License
 

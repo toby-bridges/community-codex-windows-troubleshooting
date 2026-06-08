@@ -4,6 +4,8 @@ Community-maintained diagnostics, issue mapping, and safe workarounds for Codex 
 
 > Unofficial project. This repository is not affiliated with, endorsed by, or sponsored by OpenAI. OpenAI, Codex, ChatGPT, and related marks belong to OpenAI. This project uses those names only to describe compatibility and troubleshooting scope. No OpenAI logos or brand assets are used. See [Branding and Naming](./BRANDING.md).
 
+[简体中文](./README.zh-CN.md)
+
 ## One-Line Summary
 
 This GitHub project helps Codex users on Windows diagnose common failures, map them to verified upstream issues, and apply safe troubleshooting steps without guessing.
@@ -34,6 +36,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\skills\codex-windows-trou
 ```
 
 Review the output before posting it publicly.
+
+## Contribute A Case
+
+If you found a Codex-on-Windows failure that is missing, unclear, or newly fixed, use one of these paths:
+
+| Path | Best for | Start here |
+| --- | --- | --- |
+| Error report | You have an exact error message or screenshot text | [Open a redacted case report](https://github.com/toby-bridges/community-codex-windows-troubleshooting/issues/new?template=codex-windows-error.yml) |
+| Upstream mapping | You found a relevant `openai/codex` issue, Reddit, V2EX, X, blog, or other source | [Add source context](https://github.com/toby-bridges/community-codex-windows-troubleshooting/issues/new?template=codex-windows-error.yml) |
+| Verified fix | You tested a workaround or version boundary safely | [Submit a pull request](./CONTRIBUTING.md) |
+| Guide correction | A section is wrong, stale, or too risky | [Contributing rules](./CONTRIBUTING.md) |
+
+Please include the exact error text, Codex surface, Windows version family, Codex version if available, reproduction status, related links, and workaround status. Redact tokens, private repo names, personal paths, screenshots with personal data, and full `.codex` session files.
 
 ## Top Errors
 
@@ -98,31 +113,9 @@ Workarounds are not treated as solved unless they have repeatable verification o
 
 This repository stays focused on Codex-on-Windows failures, diagnostics, evidence levels, and safe troubleshooting. If your question is not Windows-specific, CodexGuide is usually the better starting point.
 
-## Repository Name
-
-Recommended GitHub repository name:
-
-```text
-community-codex-windows-troubleshooting
-```
-
-Recommended public title:
-
-```text
-Community Codex Windows Troubleshooting Field Guide
-```
-
-This keeps the high-intent phrase `codex windows troubleshooting` while making the community-maintained status visible in the repository name. The README and disclaimer still make the unofficial status explicit, while the slug remains SEO/GEO-friendly for searches such as `Codex Windows troubleshooting`, `Codex Windows error`, and `Computer Use plugins unavailable`.
-
-Suggested GitHub topics:
-
-```text
-codex, windows, troubleshooting, openai-codex, powershell, wsl, sandbox, computer-use, browser-use, worktree
-```
-
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md). Do not submit secrets, tokens, private repo names, raw screenshots containing personal data, or full `.codex` session files.
+Start with [Contribute A Case](#contribute-a-case) or see [CONTRIBUTING.md](./CONTRIBUTING.md) for redaction, evidence, dogfood, and pull request rules.
 
 ## License
 

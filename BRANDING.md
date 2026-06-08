@@ -64,3 +64,23 @@ computer-use
 browser-use
 worktree
 ```
+
+## Social Preview Copy
+
+The GitHub social preview image should use the same main title as the repository public title:
+
+```text
+Community Codex Windows Troubleshooting Field Guide
+```
+
+Use high-intent search phrases in the subtitle and small tags, not as a replacement title:
+
+```text
+Fix sandbox, Store, WSL, worktree, and plugin failures
+```
+
+```text
+os error 740 · spawn setup refresh · Computer Use unavailable · winget · blank window
+```
+
+Keep the preview visibly community-maintained and non-official. Do not use OpenAI or Microsoft logos, wordmarks, or official-looking product art.

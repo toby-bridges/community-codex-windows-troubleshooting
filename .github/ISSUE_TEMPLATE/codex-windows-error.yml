@@ -1,5 +1,5 @@
 name: Codex Windows error report
-description: Report a Codex-on-Windows error with redacted diagnostics
+description: Report a Codex-on-Windows error with redacted diagnostics. English or Chinese is welcome.
 title: "[case]: "
 labels:
   - needs-triage
@@ -9,6 +9,8 @@ body:
       value: |
         Thanks for contributing. This is an unofficial community guide, not OpenAI support.
 
+        English or Chinese is welcome. Start with the exact error text, then add environment details and links if available.
+
         Do not paste API keys, tokens, cookies, private repo names, raw `.codex` session files, or screenshots containing personal information.
 
         This tracker is for Codex-on-Windows failures. For general Codex tutorials, workflows, and non-Windows usage questions, start with CodexGuide: https://github.com/freestylefly/CodexGuide
@@ -16,7 +18,7 @@ body:
     id: error
     attributes:
       label: Exact error text
-      description: Paste the exact error block, redacted if needed.
+      description: Paste the exact error block or screenshot text, redacted if needed.
       placeholder: |
         [info] Starting worktree creation
         fatal: invalid reference: master
@@ -34,6 +36,8 @@ body:
         - Browser
         - Chrome extension
         - Computer Use
+        - Microsoft Store / MSIX install
+        - winget install
         - Unsure
     validations:
       required: true

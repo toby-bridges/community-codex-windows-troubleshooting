@@ -2,6 +2,14 @@
 
 Thanks for helping improve this community field guide.
 
+## Fast Path
+
+Use the issue template when you have a new failure, source link, or workaround result:
+
+https://github.com/toby-bridges/community-codex-windows-troubleshooting/issues/new?template=codex-windows-error.yml
+
+Use a pull request when you are changing guide text, diagnostic scripts, the dogfood matrix, or skill references. Every new case should update the relevant guide section and, when possible, the dogfood matrix.
+
 ## What To Submit
 
 Good contributions usually include:
