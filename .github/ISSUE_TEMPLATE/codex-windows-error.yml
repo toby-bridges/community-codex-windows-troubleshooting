@@ -9,11 +9,27 @@ body:
       value: |
         Thanks for contributing. This is an unofficial community guide, not OpenAI support.
 
-        English or Chinese is welcome. Start with the exact error text, then add environment details and links if available.
+        English or Chinese is welcome. Raw reports are useful; you do not need to write a pull request.
+
+        Start with the exact error text. Maintainers can normalize it into a case ID, guide update, dogfood row, and skill/reference update.
 
         Do not paste API keys, tokens, cookies, private repo names, raw `.codex` session files, or screenshots containing personal information.
 
         This tracker is for Codex-on-Windows failures. For general Codex tutorials, workflows, and non-Windows usage questions, start with CodexGuide: https://github.com/freestylefly/CodexGuide
+  - type: dropdown
+    id: contribution-type
+    attributes:
+      label: Contribution type
+      description: Pick the closest path. This helps route the report into the data flywheel.
+      options:
+        - New error report
+        - Additional environment detail for an existing case
+        - Upstream GitHub issue or community source
+        - Workaround validation
+        - Guide correction
+        - Unsure
+    validations:
+      required: true
   - type: textarea
     id: error
     attributes:
@@ -45,7 +61,7 @@ body:
     id: windows
     attributes:
       label: Windows version family
-      description: Example: Windows 11 24H2, Windows 10 22H2, Windows Insider. Do not include hostnames or usernames.
+      description: "Example: Windows 11 24H2, Windows 10 22H2, Windows Insider. Do not include hostnames or usernames."
     validations:
       required: false
   - type: input
@@ -55,6 +71,20 @@ body:
       description: App or CLI version if available.
     validations:
       required: false
+  - type: dropdown
+    id: reproducibility
+    attributes:
+      label: Reproducibility
+      description: How repeatable is this report?
+      options:
+        - Reproducible every time
+        - Reproducible sometimes
+        - Happened once
+        - Fixed after workaround
+        - Source link only
+        - Unsure
+    validations:
+      required: true
   - type: textarea
     id: diagnostics
     attributes:
@@ -91,3 +121,13 @@ body:
       description: What did you try, and was it safe/reversible?
     validations:
       required: false
+  - type: checkboxes
+    id: redaction-confirmation
+    attributes:
+      label: Redaction and reuse confirmation
+      description: Public issue data may be summarized into the guide, matrix, and skill references.
+      options:
+        - label: I removed secrets, tokens, private repository names, personal paths, and private screenshots.
+          required: true
+        - label: This redacted report can be summarized into the public guide, dogfood matrix, and skill/reference files.
+          required: true

@@ -2,13 +2,37 @@
 
 Thanks for helping improve this community field guide.
 
-## Fast Path
+## 60-Second Path
 
-Use the issue template when you have a new failure, source link, or workaround result:
+You do not need to write a pull request to contribute useful data.
+
+Open the issue template when you have a new failure, source link, or workaround result:
 
 https://github.com/toby-bridges/community-codex-windows-troubleshooting/issues/new?template=codex-windows-error.yml
 
+The minimum useful report is:
+
+```text
+Error:
+Surface:
+Windows:
+Codex version:
+What happened:
+What fixed it, if anything:
+Related links:
+```
+
 Use a pull request when you are changing guide text, diagnostic scripts, the dogfood matrix, or skill references. Every new case should update the relevant guide section and, when possible, the dogfood matrix.
+
+## Data Flywheel
+
+The project turns contributions into reusable troubleshooting data:
+
+```text
+Raw report -> normalized error signature -> case ID -> guide update -> dogfood check -> skill/reference update
+```
+
+Maintainers can normalize raw reports into case IDs, matrix rows, guide sections, and skill references. Contributors only need to provide redacted facts.
 
 ## What To Submit
 

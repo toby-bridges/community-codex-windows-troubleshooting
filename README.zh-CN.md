@@ -1,16 +1,25 @@
 # Codex Windows 社区排障指南
 
+![Community Codex Windows Troubleshooting Field Guide 题图](./assets/social-preview.jpg)
+
 这是一个社区维护的 Codex Windows 排障、事实核查和 dogfood 项目。
 
-> 非官方项目。本仓库不隶属于 OpenAI，也不代表 OpenAI 认可、赞助或背书。OpenAI、Codex、ChatGPT 及相关标识属于 OpenAI。本项目只在描述兼容性和排障范围时使用这些名称，不使用 OpenAI logo 或品牌素材。见 [Branding and Naming](./BRANDING.md)。
+[English](./README.md) · [报错指南](./WINDOWS-CODEX-ERROR-GUIDE.md) · [提交 case](https://github.com/toby-bridges/community-codex-windows-troubleshooting/issues/new?template=codex-windows-error.yml) · [运行诊断](#快速开始) · [参与贡献](#贡献一个-case)
 
-[English](./README.md)
-
-![Community Codex Windows Troubleshooting Field Guide 题图](./assets/social-preview.jpg)
+> 非官方项目。本仓库不隶属于 OpenAI，也不代表 OpenAI 认可、赞助或背书。见 [Branding and Naming](./BRANDING.md)。
 
 ## 一句话总结
 
 这个 GitHub 项目可以帮助 Windows 上的 Codex 用户把常见报错定位到已核查的 GitHub issue 和安全排障步骤，从而少走弯路地恢复可用工作流。
+
+## 快速入口
+
+| 我想要... | 从这里开始 |
+| --- | --- |
+| 解决一个 Codex Windows 报错 | 在 [Windows Codex 报错指南](./WINDOWS-CODEX-ERROR-GUIDE.md) 中搜索错误原文 |
+| 分享一个新报错 | [提交脱敏 case report](https://github.com/toby-bridges/community-codex-windows-troubleshooting/issues/new?template=codex-windows-error.yml) |
+| 补充 GitHub issue / 社区来源 | [提交来源线索](https://github.com/toby-bridges/community-codex-windows-troubleshooting/issues/new?template=codex-windows-error.yml) |
+| 验证一个 workaround | [查看贡献规则](./CONTRIBUTING.md) |
 
 ## 这个项目解决什么问题
 
@@ -48,6 +57,20 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\skills\codex-windows-trou
 
 ## 贡献一个 case
 
+原始报错也很有价值。你不需要写 PR，也不需要理解整个指南，才能贡献一个有用的数据点。
+
+最快的有效提交格式是：
+
+```text
+错误原文：
+使用入口：Windows App / CLI / WSL / Browser / Computer Use / Store / winget
+Windows 版本：
+Codex 版本：
+发生了什么：
+尝试过什么，是否解决：
+相关链接：
+```
+
 如果你遇到新的 Codex Windows 报错、发现已有结论过期，或者验证了某个 workaround，优先走下面这些入口：
 
 | 入口 | 适合情况 | 从这里开始 |
@@ -60,6 +83,16 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\skills\codex-windows-trou
 一个高质量 case 通常包含：错误原文、Codex 使用入口（Windows App / CLI / WSL / Browser / Computer Use 等）、Windows 版本大类、Codex 版本、是否可复现、相关链接、尝试过的 workaround、是否只读或可逆。
 
 不要提交 API key、token、cookie、私有仓库名、完整 `.codex` session 文件、包含个人信息的截图、用户名路径、邮箱或未脱敏 crash dump。
+
+## 数据复利
+
+每个有效贡献都应该变成可复用数据，而不是一次性的 support thread：
+
+```text
+原始报错 -> 归一化错误签名 -> case ID -> 指南更新 -> dogfood 校验 -> skill/reference 更新
+```
+
+维护者可以负责归一化和写入矩阵。贡献者只需要提供脱敏事实：错误原文、环境大类、尝试过什么、是否解决，以及相关 GitHub issue 或社区链接。
 
 ## 高频错误入口
 

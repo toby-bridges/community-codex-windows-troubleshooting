@@ -1,16 +1,25 @@
 # Community Codex Windows Troubleshooting Field Guide
 
+![Community Codex Windows Troubleshooting Field Guide social preview](./assets/social-preview.jpg)
+
 Community-maintained diagnostics, issue mapping, and safe workarounds for Codex on Windows.
 
-> Unofficial project. This repository is not affiliated with, endorsed by, or sponsored by OpenAI. OpenAI, Codex, ChatGPT, and related marks belong to OpenAI. This project uses those names only to describe compatibility and troubleshooting scope. No OpenAI logos or brand assets are used. See [Branding and Naming](./BRANDING.md).
+[简体中文](./README.zh-CN.md) · [Error Guide](./WINDOWS-CODEX-ERROR-GUIDE.md) · [Report A Case](https://github.com/toby-bridges/community-codex-windows-troubleshooting/issues/new?template=codex-windows-error.yml) · [Run Diagnostics](#quick-start) · [Contribute](#contribute-a-case)
 
-[简体中文](./README.zh-CN.md)
-
-![Community Codex Windows Troubleshooting Field Guide social preview](./assets/social-preview.jpg)
+> Unofficial project. This repository is not affiliated with, endorsed by, or sponsored by OpenAI. See [Branding and Naming](./BRANDING.md).
 
 ## One-Line Summary
 
 This GitHub project helps Codex users on Windows diagnose common failures, map them to verified upstream issues, and apply safe troubleshooting steps without guessing.
+
+## Quick Actions
+
+| I want to... | Start here |
+| --- | --- |
+| Fix a Codex Windows error | Search the exact error in [Windows Codex Error Guide](./WINDOWS-CODEX-ERROR-GUIDE.md) |
+| Share a new failure | [Open a redacted case report](https://github.com/toby-bridges/community-codex-windows-troubleshooting/issues/new?template=codex-windows-error.yml) |
+| Add an upstream issue or community source | [Submit a source lead](https://github.com/toby-bridges/community-codex-windows-troubleshooting/issues/new?template=codex-windows-error.yml) |
+| Validate a workaround | [Follow the contribution rules](./CONTRIBUTING.md) |
 
 ## Why This Exists
 
@@ -41,7 +50,21 @@ Review the output before posting it publicly.
 
 ## Contribute A Case
 
-If you found a Codex-on-Windows failure that is missing, unclear, or newly fixed, use one of these paths:
+Raw reports are useful. You do not need to write a pull request or understand the whole guide to contribute.
+
+The fastest useful report is:
+
+```text
+Error:
+Surface: Windows app / CLI / WSL / Browser / Computer Use / Store / winget
+Windows:
+Codex version:
+What happened:
+What fixed it, if anything:
+Related links:
+```
+
+Use one of these paths:
 
 | Path | Best for | Start here |
 | --- | --- | --- |
@@ -51,6 +74,16 @@ If you found a Codex-on-Windows failure that is missing, unclear, or newly fixed
 | Guide correction | A section is wrong, stale, or too risky | [Contributing rules](./CONTRIBUTING.md) |
 
 Please include the exact error text, Codex surface, Windows version family, Codex version if available, reproduction status, related links, and workaround status. Redact tokens, private repo names, personal paths, screenshots with personal data, and full `.codex` session files.
+
+## Data Flywheel
+
+Each useful contribution should become reusable data, not a one-off support thread:
+
+```text
+Raw report -> normalized error signature -> case ID -> guide update -> dogfood check -> skill/reference update
+```
+
+Maintainers can do the normalization work. Contributors only need to provide redacted facts: exact error text, environment family, what they tried, and links to upstream/community evidence.
 
 ## Top Errors
 
