@@ -67,11 +67,25 @@ worktree
 
 ## Social Preview Copy
 
+Final repository asset:
+
+```text
+assets/social-preview.jpg
+```
+
+Current dimensions and size:
+
+```text
+1280x640, approximately 187 KB
+```
+
 The GitHub social preview image should use the same main title as the repository public title:
 
 ```text
 Community Codex Windows Troubleshooting Field Guide
 ```
+
+The visual direction should stay consistent with the author's `api-relay-audit` project family: dark engineering UI, audit/diagnostic panels, blue-to-violet/pink gradient title treatment, and green/yellow/red status semantics. Do not imitate Codex official branding.
 
 Use high-intent search phrases in the subtitle and small tags, not as a replacement title:
 

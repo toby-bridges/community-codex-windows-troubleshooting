@@ -6,6 +6,8 @@ Community-maintained diagnostics, issue mapping, and safe workarounds for Codex 
 
 [简体中文](./README.zh-CN.md)
 
+![Community Codex Windows Troubleshooting Field Guide social preview](./assets/social-preview.jpg)
+
 ## One-Line Summary
 
 This GitHub project helps Codex users on Windows diagnose common failures, map them to verified upstream issues, and apply safe troubleshooting steps without guessing.

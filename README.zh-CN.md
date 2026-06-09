@@ -6,6 +6,8 @@
 
 [English](./README.md)
 
+![Community Codex Windows Troubleshooting Field Guide 题图](./assets/social-preview.jpg)
+
 ## 一句话总结
 
 这个 GitHub 项目可以帮助 Windows 上的 Codex 用户把常见报错定位到已核查的 GitHub issue 和安全排障步骤，从而少走弯路地恢复可用工作流。
