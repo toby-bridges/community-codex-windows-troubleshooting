@@ -50,7 +50,7 @@ Review the output before posting it publicly.
 
 ## Contribute A Case
 
-Raw reports are useful. You do not need to write a pull request or understand the whole guide to contribute.
+Raw reports are welcome. You do not need to write a pull request or understand the whole guide to contribute. Maintainers will normalize useful reports into case IDs, guide updates, dogfood rows, and skill/reference updates.
 
 The fastest useful report is:
 

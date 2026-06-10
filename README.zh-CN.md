@@ -57,7 +57,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\skills\codex-windows-trou
 
 ## 贡献一个 case
 
-原始报错也很有价值。你不需要写 PR，也不需要理解整个指南，才能贡献一个有用的数据点。
+原始报错也欢迎提交。你不需要写 PR，也不需要理解整个指南，才能贡献一个有用的数据点。维护者会把有效 report 归一化成 case ID、指南更新、dogfood 行和 skill/reference 更新。
 
 最快的有效提交格式是：
 
