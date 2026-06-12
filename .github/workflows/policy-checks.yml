@@ -1,0 +1,31 @@
+name: Policy Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+      - codex/**
+
+permissions:
+  contents: read
+
+jobs:
+  policy:
+    name: Version and change policy
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run version governance test
+        shell: pwsh
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File ".\scripts\test-version-governance.ps1"
+
+      - name: Run change policy check
+        shell: pwsh
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File ".\scripts\check-change-policy.ps1" -BaseRef "origin/${{ github.base_ref }}"

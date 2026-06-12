@@ -9,6 +9,7 @@ All notable project changes are tracked here. This project follows Semantic Vers
 - Version governance baseline with a single `VERSION` source file.
 - Pull request expectations for version impact, changelog entries, and coupled code/documentation updates.
 - Change policy check script for branch diffs, covering changelog, script documentation, and guide companion updates.
+- GitHub Actions policy workflow for version governance and change policy checks.
 
 ## [0.1.0] - 2026-06-05
 
