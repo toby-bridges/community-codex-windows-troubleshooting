@@ -49,10 +49,30 @@ Review output before posting it publicly.
 
 ## Guide Dogfood
 
-Run the full safe dogfood pass:
+Run the default local dogfood pass:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File "<skill-root>\scripts\run-codex-windows-dogfood.ps1" -Workspace "<affected-repo>"
 ```
 
-The runner covers C001-C020 from the research guide. It uses live GitHub issue checks, local read-only diagnostics, and `%TEMP%` fixtures for reversible reproductions. Use `-KeepArtifacts` only when the user explicitly wants to inspect temporary fixtures.
+The default `Local` mode covers C001-C020 from the research guide with local read-only diagnostics and `%TEMP%` fixtures, but skips live GitHub issue checks to avoid long default runs. Use `-Mode Full` when refreshing live issue status, duplicates, fixed versions, or new comments. Use `-Mode Fast` for fixture-only smoke checks that skip both diagnostics and live GitHub evidence. Use `-KeepArtifacts` only when the user explicitly wants to inspect temporary fixtures.
+
+Run the full evidence refresh:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "<skill-root>\scripts\run-codex-windows-dogfood.ps1" -Workspace "<affected-repo>" -Mode Full
+```
+
+Run the fixture-only smoke check:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "<skill-root>\scripts\run-codex-windows-dogfood.ps1" -Workspace "<affected-repo>" -Mode Fast
+```
+
+Write structured local artifacts for project iteration:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "<skill-root>\scripts\run-codex-windows-dogfood.ps1" -Workspace "<affected-repo>" -ArtifactRoot ".\dogfood-artifacts" -ShowProgress
+```
+
+`-ArtifactRoot` writes `*-dogfood-result.local.json`, `*-dogfood-trace.local.json`, and, in `Local` or `Full` mode, `*-diagnostics.local.json`. Treat these files as local data sources for guide, matrix, issue, and skill updates. Review and redact them before sharing because they can contain machine-specific paths, package state, environment flags, and issue timing metadata.

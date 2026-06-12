@@ -1,17 +1,99 @@
 [CmdletBinding()]
 param(
     [string]$Workspace = (Get-Location).Path,
-    [switch]$KeepArtifacts
+    [ValidateSet("Fast", "Local", "Full")]
+    [string]$Mode = "Local",
+    [switch]$KeepArtifacts,
+    [string]$ArtifactRoot,
+    [string]$OutputPath,
+    [string]$TracePath,
+    [switch]$ShowProgress
 )
 
 $ErrorActionPreference = "Continue"
+$scriptStartedAt = Get-Date
+$traceEvents = @()
 
 $dogfoodRoot = Join-Path $env:TEMP "codex-windows-dogfood"
 $runId = Get-Date -Format "yyyyMMdd-HHmmss"
 $runDir = Join-Path $dogfoodRoot $runId
 $fixtureDir = Join-Path $runDir "fixtures"
+$artifactRootFull = $null
+$includeDiagnostics = ($Mode -eq "Local" -or $Mode -eq "Full")
+$includeGitHubEvidence = ($Mode -eq "Full")
+
+if ($ArtifactRoot) {
+    $artifactRootFull = [System.IO.Path]::GetFullPath($ArtifactRoot)
+    New-Item -ItemType Directory -Force -Path $artifactRootFull | Out-Null
+    if (-not $OutputPath) {
+        $OutputPath = Join-Path $artifactRootFull "$runId-dogfood-result.local.json"
+    }
+    if (-not $TracePath) {
+        $TracePath = Join-Path $artifactRootFull "$runId-dogfood-trace.local.json"
+    }
+} elseif ($KeepArtifacts) {
+    if (-not $OutputPath) {
+        $OutputPath = Join-Path $runDir "dogfood-result.local.json"
+    }
+    if (-not $TracePath) {
+        $TracePath = Join-Path $runDir "dogfood-trace.local.json"
+    }
+}
 
 New-Item -ItemType Directory -Force -Path $fixtureDir | Out-Null
+
+function Write-DogfoodProgress {
+    param([string]$Message)
+    if ($ShowProgress) {
+        Write-Host ("[dogfood] {0}" -f $Message)
+    }
+}
+
+function Add-TraceEvent {
+    param(
+        [string]$Name,
+        [string]$Phase = "instant",
+        $DurationMs = $null,
+        $Ok = $null,
+        [object]$Data = $null
+    )
+
+    $event = [ordered]@{
+        at = (Get-Date).ToString("o")
+        name = $Name
+        phase = $Phase
+    }
+    if ($null -ne $DurationMs) {
+        $event.durationMs = [int64]$DurationMs
+    }
+    if ($null -ne $Ok) {
+        $event.ok = [bool]$Ok
+    }
+    if ($null -ne $Data) {
+        $event.data = $Data
+    }
+    $script:traceEvents += $event
+}
+
+function Ensure-ParentDirectory {
+    param([string]$Path)
+    if (-not $Path) {
+        return
+    }
+    $parent = Split-Path -Parent ([System.IO.Path]::GetFullPath($Path))
+    if ($parent) {
+        New-Item -ItemType Directory -Force -Path $parent | Out-Null
+    }
+}
+
+Add-TraceEvent -Name "dogfood.run" -Phase "start" -Data ([ordered]@{
+    runId = $runId
+    mode = $Mode
+    workspace = $Workspace
+    runDir = $runDir
+    artifactRoot = $artifactRootFull
+})
+Write-DogfoodProgress "run $runId started in $Mode mode"
 
 function Invoke-Capture {
     param(
@@ -20,24 +102,46 @@ function Invoke-Capture {
         [string]$WorkingDirectory
     )
 
+    $timer = [Diagnostics.Stopwatch]::StartNew()
+    $result = $null
     try {
         if ($WorkingDirectory) {
-            $output = & $File @Arguments 2>&1 | ForEach-Object { $_.ToString() }
+            Push-Location -LiteralPath $WorkingDirectory
+            try {
+                $output = & $File @Arguments 2>&1 | ForEach-Object { $_.ToString() }
+            } finally {
+                Pop-Location
+            }
         } else {
             $output = & $File @Arguments 2>&1 | ForEach-Object { $_.ToString() }
         }
-        return [ordered]@{
+        $result = [ordered]@{
             ok = ($LASTEXITCODE -eq 0)
             exitCode = $LASTEXITCODE
             output = ($output -join "`n")
+            durationMs = $null
         }
     } catch {
-        return [ordered]@{
+        $result = [ordered]@{
             ok = $false
             exitCode = $null
             output = $_.Exception.Message
+            durationMs = $null
         }
+    } finally {
+        $timer.Stop()
+        if ($null -ne $result) {
+            $result.durationMs = $timer.ElapsedMilliseconds
+        }
+        Add-TraceEvent -Name "command" -Phase "end" -DurationMs $timer.ElapsedMilliseconds -Ok $result.ok -Data ([ordered]@{
+            file = $File
+            arguments = $Arguments
+            workingDirectory = $WorkingDirectory
+            exitCode = $result.exitCode
+        })
     }
+
+    return $result
 }
 
 function Add-Case {
@@ -148,12 +252,16 @@ function Get-IssueEvidence {
     param([int[]]$Numbers)
     $items = @()
     foreach ($number in $Numbers) {
+        $issueTimer = [Diagnostics.Stopwatch]::StartNew()
+        $attempts = 1
+        Write-DogfoodProgress "checking openai/codex#$number"
         $view = Invoke-Capture -File "gh" -Arguments @(
             "issue", "view", $number.ToString(),
             "--repo", "openai/codex",
             "--json", "number,title,state,url,updatedAt"
         )
         if (-not $view.ok) {
+            $attempts++
             Start-Sleep -Milliseconds 500
             $view = Invoke-Capture -File "gh" -Arguments @(
                 "issue", "view", $number.ToString(),
@@ -161,17 +269,38 @@ function Get-IssueEvidence {
                 "--json", "number,title,state,url,updatedAt"
             )
         }
+        $item = $null
         if ($view.ok -and $view.output) {
             try {
-                $items += ($view.output | ConvertFrom-Json)
+                $item = ($view.output | ConvertFrom-Json)
             } catch {
-                $items += [ordered]@{ number = $number; state = "parse-failed"; url = "https://github.com/openai/codex/issues/$number" }
+                $item = [ordered]@{ number = $number; state = "parse-failed"; url = "https://github.com/openai/codex/issues/$number" }
             }
         } else {
-            $items += [ordered]@{ number = $number; state = "gh-failed"; url = "https://github.com/openai/codex/issues/$number"; error = $view.output }
+            $item = [ordered]@{ number = $number; state = "gh-failed"; url = "https://github.com/openai/codex/issues/$number"; error = $view.output }
         }
+        $items += $item
+        $issueTimer.Stop()
+        Add-TraceEvent -Name "github.issueEvidence" -Phase "end" -DurationMs $issueTimer.ElapsedMilliseconds -Ok $view.ok -Data ([ordered]@{
+            issue = $number
+            state = $item.state
+            attempts = $attempts
+        })
+        Write-DogfoodProgress ("openai/codex#{0} -> {1} ({2} ms)" -f $number, $item.state, $issueTimer.ElapsedMilliseconds)
     }
     return $items
+}
+
+function New-SkippedIssueEvidence {
+    param([int[]]$Numbers)
+
+    return @($Numbers | ForEach-Object {
+        [ordered]@{
+            number = $_
+            state = "skipped"
+            url = "https://github.com/openai/codex/issues/$_"
+        }
+    })
 }
 
 function Format-IssueStates {
@@ -182,19 +311,48 @@ function Format-IssueStates {
 $cases = @()
 $workspaceExists = Test-Path -LiteralPath $Workspace
 $diag = $null
-if ($workspaceExists) {
+$diagPath = $null
+if ($workspaceExists -and $includeDiagnostics) {
+    $diagTimer = [Diagnostics.Stopwatch]::StartNew()
+    Add-TraceEvent -Name "collectDiagnostics" -Phase "start"
+    Write-DogfoodProgress "collecting local diagnostics"
     $diagScript = Join-Path (Split-Path -Parent $PSScriptRoot) "scripts\collect-codex-windows-diagnostics.ps1"
     if (-not (Test-Path -LiteralPath $diagScript)) {
         $diagScript = Join-Path $PSScriptRoot "collect-codex-windows-diagnostics.ps1"
     }
-    $diagPath = Join-Path $runDir "diagnostics.json"
+    if ($artifactRootFull) {
+        $diagPath = Join-Path $artifactRootFull "$runId-diagnostics.local.json"
+    } else {
+        $diagPath = Join-Path $runDir "diagnostics.json"
+    }
     & powershell -NoProfile -ExecutionPolicy Bypass -File $diagScript -Workspace $Workspace -OutputPath $diagPath | Out-Null
     if (Test-Path -LiteralPath $diagPath) {
         $diag = Get-Content -Raw -LiteralPath $diagPath | ConvertFrom-Json
     }
+    $diagTimer.Stop()
+    Add-TraceEvent -Name "collectDiagnostics" -Phase "end" -DurationMs $diagTimer.ElapsedMilliseconds -Ok ($null -ne $diag) -Data ([ordered]@{
+        path = $diagPath
+        bytes = if (Test-Path -LiteralPath $diagPath) { (Get-Item -LiteralPath $diagPath).Length } else { 0 }
+    })
+    Write-DogfoodProgress ("local diagnostics finished ({0} ms)" -f $diagTimer.ElapsedMilliseconds)
+} elseif ($workspaceExists) {
+    Add-TraceEvent -Name "collectDiagnostics" -Phase "skipped" -Ok $true -Data ([ordered]@{
+        reason = "mode"
+        mode = $Mode
+    })
+    Write-DogfoodProgress "local diagnostics skipped in $Mode mode"
+} else {
+    Add-TraceEvent -Name "collectDiagnostics" -Phase "skipped" -Ok $false -Data ([ordered]@{
+        reason = "workspace not found"
+        workspace = $Workspace
+    })
 }
 
 # C001: three safe Git worktree fixtures.
+$fixtureTimer = [Diagnostics.Stopwatch]::StartNew()
+Add-TraceEvent -Name "worktreeFixtures" -Phase "start"
+Write-DogfoodProgress "running C001 worktree fixtures"
+$githubEvidenceLabel = if ($includeGitHubEvidence) { "live GitHub #12346/#22635" } else { "GitHub issue evidence skipped in $Mode mode" }
 $c001Details = [ordered]@{}
 $emptyRepo = New-Repo "c001-empty-unborn"
 $emptyWorktree = Join-Path $fixtureDir "c001-empty-unborn-worktree"
@@ -227,23 +385,76 @@ $c001Details.remoteOnly = [ordered]@{
     verifyRemote = (Run-Git -Repo $remoteOnlyRepo -GitArguments @("rev-parse", "--verify", "origin/feature/dogfood")).output
     worktreeAdd = (Invoke-Capture -File "git" -Arguments @("-C", $remoteOnlyRepo, "worktree", "add", "--detach", (Join-Path $fixtureDir "c001-remote-only-worktree"), "feature/dogfood")).output
 }
-$cases += Add-Case -Id "C001" -Section "2. Worktree 创建失败" -Signature "fatal: invalid reference: master/main/feature" -Target "L2" -Actual "L2" -Evidence "local fixture plus GitHub #12346/#22635" -Command "git worktree add --detach <tmp> <ref>" -Conclusion "已验证：unborn branch、无 main、本地缺 remote-only 短名都会触发 invalid reference。" -NeedsUpdate "已补指南和 skill；本轮无需再补。" -Details $c001Details
+$cases += Add-Case -Id "C001" -Section "2. Worktree 创建失败" -Signature "fatal: invalid reference: master/main/feature" -Target "L2" -Actual "L2" -Evidence "local fixture; $githubEvidenceLabel" -Command "git worktree add --detach <tmp> <ref>" -Conclusion "已验证：unborn branch、无 main、本地缺 remote-only 短名都会触发 invalid reference。" -NeedsUpdate "已补指南和 skill；本轮无需再补。" -Details $c001Details
+$fixtureTimer.Stop()
+Add-TraceEvent -Name "worktreeFixtures" -Phase "end" -DurationMs $fixtureTimer.ElapsedMilliseconds -Ok $true
+Write-DogfoodProgress ("C001 worktree fixtures finished ({0} ms)" -f $fixtureTimer.ElapsedMilliseconds)
 
-$issueWorktree = Get-IssueEvidence -Numbers @(12346, 22635)
-$issuePlugins = Get-IssueEvidence -Numbers @(26536, 26501, 25220, 26109, 22114)
-$issueWin10 = Get-IssueEvidence -Numbers @(25178, 25411)
-$issue740 = Get-IssueEvidence -Numbers @(24050, 26477, 26158)
-$issueSandboxOther = Get-IssueEvidence -Numbers @(18620, 26438, 23194)
-$issueNetwork = Get-IssueEvidence -Numbers @(18675, 25207, 25117)
-$issueWsl = Get-IssueEvidence -Numbers @(25216, 22759, 22376, 24884, 26096)
-$issueShell = Get-IssueEvidence -Numbers @(13917, 19629, 16268)
-$issueSessions = Get-IssueEvidence -Numbers @(22004, 25430, 26104)
-$issueUi = Get-IssueEvidence -Numbers @(25513, 20867, 26401)
-$issueConfig = Get-IssueEvidence -Numbers @(26421)
-$issueCrash = Get-IssueEvidence -Numbers @(19352, 25912)
-$issueAv = Get-IssueEvidence -Numbers @(25425, 26194, 26218)
-$issueStore = Get-IssueEvidence -Numbers @(17491)
-$issueStoreInfra = Get-IssueEvidence -Numbers @(21538, 24010)
+$issueGroups = [ordered]@{
+    worktree = @(12346, 22635)
+    plugins = @(26536, 26501, 25220, 26109, 22114)
+    win10 = @(25178, 25411)
+    issue740 = @(24050, 26477, 26158)
+    sandboxOther = @(18620, 26438, 23194)
+    network = @(18675, 25207, 25117)
+    wsl = @(25216, 22759, 22376, 24884, 26096)
+    shell = @(13917, 19629, 16268)
+    sessions = @(22004, 25430, 26104)
+    ui = @(25513, 20867, 26401)
+    config = @(26421)
+    crash = @(19352, 25912)
+    av = @(25425, 26194, 26218)
+    store = @(17491)
+    storeInfra = @(21538, 24010)
+}
+
+if ($includeGitHubEvidence) {
+    $issueTimer = [Diagnostics.Stopwatch]::StartNew()
+    Add-TraceEvent -Name "githubIssueEvidence" -Phase "start"
+    Write-DogfoodProgress "checking live GitHub issue evidence"
+    $issueWorktree = Get-IssueEvidence -Numbers $issueGroups.worktree
+    $issuePlugins = Get-IssueEvidence -Numbers $issueGroups.plugins
+    $issueWin10 = Get-IssueEvidence -Numbers $issueGroups.win10
+    $issue740 = Get-IssueEvidence -Numbers $issueGroups.issue740
+    $issueSandboxOther = Get-IssueEvidence -Numbers $issueGroups.sandboxOther
+    $issueNetwork = Get-IssueEvidence -Numbers $issueGroups.network
+    $issueWsl = Get-IssueEvidence -Numbers $issueGroups.wsl
+    $issueShell = Get-IssueEvidence -Numbers $issueGroups.shell
+    $issueSessions = Get-IssueEvidence -Numbers $issueGroups.sessions
+    $issueUi = Get-IssueEvidence -Numbers $issueGroups.ui
+    $issueConfig = Get-IssueEvidence -Numbers $issueGroups.config
+    $issueCrash = Get-IssueEvidence -Numbers $issueGroups.crash
+    $issueAv = Get-IssueEvidence -Numbers $issueGroups.av
+    $issueStore = Get-IssueEvidence -Numbers $issueGroups.store
+    $issueStoreInfra = Get-IssueEvidence -Numbers $issueGroups.storeInfra
+    $issueTimer.Stop()
+    Add-TraceEvent -Name "githubIssueEvidence" -Phase "end" -DurationMs $issueTimer.ElapsedMilliseconds -Ok $true -Data ([ordered]@{
+        issueCount = 41
+    })
+    Write-DogfoodProgress ("live GitHub issue evidence finished ({0} ms)" -f $issueTimer.ElapsedMilliseconds)
+} else {
+    $issueWorktree = New-SkippedIssueEvidence -Numbers $issueGroups.worktree
+    $issuePlugins = New-SkippedIssueEvidence -Numbers $issueGroups.plugins
+    $issueWin10 = New-SkippedIssueEvidence -Numbers $issueGroups.win10
+    $issue740 = New-SkippedIssueEvidence -Numbers $issueGroups.issue740
+    $issueSandboxOther = New-SkippedIssueEvidence -Numbers $issueGroups.sandboxOther
+    $issueNetwork = New-SkippedIssueEvidence -Numbers $issueGroups.network
+    $issueWsl = New-SkippedIssueEvidence -Numbers $issueGroups.wsl
+    $issueShell = New-SkippedIssueEvidence -Numbers $issueGroups.shell
+    $issueSessions = New-SkippedIssueEvidence -Numbers $issueGroups.sessions
+    $issueUi = New-SkippedIssueEvidence -Numbers $issueGroups.ui
+    $issueConfig = New-SkippedIssueEvidence -Numbers $issueGroups.config
+    $issueCrash = New-SkippedIssueEvidence -Numbers $issueGroups.crash
+    $issueAv = New-SkippedIssueEvidence -Numbers $issueGroups.av
+    $issueStore = New-SkippedIssueEvidence -Numbers $issueGroups.store
+    $issueStoreInfra = New-SkippedIssueEvidence -Numbers $issueGroups.storeInfra
+    Add-TraceEvent -Name "githubIssueEvidence" -Phase "skipped" -Ok $true -Data ([ordered]@{
+        reason = "mode"
+        mode = $Mode
+        issueCount = 41
+    })
+    Write-DogfoodProgress "live GitHub issue evidence skipped in $Mode mode"
+}
 
 $marketplaceExists = if ($diag) { [bool]$diag.codexFiles.bundledMarketplaceExists } else { $false }
 $pluginCacheExists = if ($diag) { [bool]$diag.codexFiles.pluginCacheExists } else { $false }
@@ -304,17 +515,50 @@ $cases += Add-Case -Id "C020" -Section "15. Microsoft Store / winget 安装链�
 
 $cases += Add-Case -Id "C016" -Section "17. 当前优先级" -Signature "P0/P1/P2 priority review" -Target "L0" -Actual "L0" -Evidence "C001-C015 plus C017-C020 dogfood outputs" -Command "review case outcomes against guide priority list" -Conclusion "仅证据核查：P0/P1/P2 与本轮证据一致；C001 保持 P1，P0 仍是 sandbox 740、plugin marketplace、large session；C017-C020 保持 community leads，C020 的 WinGet 故障类有官方 A 级证据。" -NeedsUpdate "不需要。"
 
+Add-TraceEvent -Name "dogfood.run" -Phase "end" -DurationMs ([int64]((Get-Date) - $scriptStartedAt).TotalMilliseconds) -Ok $true -Data ([ordered]@{
+    caseCount = $cases.Count
+})
+
 $result = [ordered]@{
     runId = $runId
     generatedAt = (Get-Date).ToString("o")
+    mode = $Mode
+    durationMs = [int64]((Get-Date) - $scriptStartedAt).TotalMilliseconds
     runDir = $runDir
     tempRoot = $dogfoodRoot
+    artifactRoot = $artifactRootFull
     workspace = $Workspace
+    diagnosticsPath = $diagPath
+    outputPath = $OutputPath
+    tracePath = $TracePath
     cleanup = if ($KeepArtifacts) { "kept" } else { "cleaned" }
+    traceSummary = [ordered]@{
+        eventCount = $traceEvents.Count
+        slowest = @($traceEvents | Where-Object { $null -ne $_.durationMs } | Sort-Object { $_.durationMs } -Descending | Select-Object -First 10)
+    }
     cases = $cases
 }
 
 $json = $result | ConvertTo-Json -Depth 12
+
+if ($OutputPath) {
+    Ensure-ParentDirectory -Path $OutputPath
+    Set-Content -LiteralPath $OutputPath -Value $json -Encoding UTF8
+}
+
+if ($TracePath) {
+    Ensure-ParentDirectory -Path $TracePath
+    $traceJson = [ordered]@{
+        runId = $runId
+        generatedAt = (Get-Date).ToString("o")
+        mode = $Mode
+        workspace = $Workspace
+        outputPath = $OutputPath
+        diagnosticsPath = $diagPath
+        events = $traceEvents
+    } | ConvertTo-Json -Depth 12
+    Set-Content -LiteralPath $TracePath -Value $traceJson -Encoding UTF8
+}
 
 if (-not $KeepArtifacts) {
     try {
