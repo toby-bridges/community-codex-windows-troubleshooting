@@ -303,6 +303,143 @@ function New-SkippedIssueEvidence {
     })
 }
 
+function Get-UniqueIssueNumbers {
+    param([object]$IssueGroups)
+
+    $seen = @{}
+    $numbers = @()
+    foreach ($group in $IssueGroups.GetEnumerator()) {
+        foreach ($number in $group.Value) {
+            $key = [int]$number
+            if (-not $seen.ContainsKey($key)) {
+                $seen[$key] = $true
+                $numbers += $key
+            }
+        }
+    }
+    return $numbers
+}
+
+function ConvertTo-IssueEvidenceGroups {
+    param(
+        [object]$IssueGroups,
+        [hashtable]$ItemsByNumber
+    )
+
+    $groups = [ordered]@{}
+    foreach ($group in $IssueGroups.GetEnumerator()) {
+        $items = @()
+        foreach ($number in $group.Value) {
+            $items += $ItemsByNumber[[int]$number]
+        }
+        $groups[$group.Key] = $items
+    }
+    return $groups
+}
+
+function Get-IssueEvidenceBatch {
+    param([object]$IssueGroups)
+
+    $batchTimer = [Diagnostics.Stopwatch]::StartNew()
+    $numbers = Get-UniqueIssueNumbers -IssueGroups $IssueGroups
+    if ($numbers.Count -eq 0) {
+        return [ordered]@{}
+    }
+
+    $queryLines = @($numbers | ForEach-Object {
+        "      i$($_): issue(number: $($_)) { number title state url updatedAt }"
+    })
+    $query = @"
+query {
+  repository(owner: "openai", name: "codex") {
+$($queryLines -join "`n")
+  }
+}
+"@
+    $queryPath = Join-Path $runDir "github-issue-evidence.graphql"
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($queryPath, $query, $utf8NoBom)
+
+    $view = Invoke-Capture -File "gh" -Arguments @(
+        "api",
+        "graphql",
+        "-F",
+        "query=@$queryPath"
+    )
+
+    if (-not $view.ok) {
+        $batchTimer.Stop()
+        Add-TraceEvent -Name "github.issueEvidence.batch" -Phase "end" -DurationMs $batchTimer.ElapsedMilliseconds -Ok $false -Data ([ordered]@{
+            issueCount = $numbers.Count
+            fallback = "serial"
+            error = $view.output
+        })
+        return $null
+    }
+
+    try {
+        $parsed = $view.output | ConvertFrom-Json
+    } catch {
+        $batchTimer.Stop()
+        Add-TraceEvent -Name "github.issueEvidence.batch" -Phase "end" -DurationMs $batchTimer.ElapsedMilliseconds -Ok $false -Data ([ordered]@{
+            issueCount = $numbers.Count
+            fallback = "serial"
+            error = $_.Exception.Message
+        })
+        return $null
+    }
+
+    $repository = $parsed.data.repository
+    if ($null -eq $repository) {
+        $batchTimer.Stop()
+        Add-TraceEvent -Name "github.issueEvidence.batch" -Phase "end" -DurationMs $batchTimer.ElapsedMilliseconds -Ok $false -Data ([ordered]@{
+            issueCount = $numbers.Count
+            fallback = "serial"
+            error = "missing repository in GraphQL response"
+        })
+        return $null
+    }
+
+    $itemsByNumber = @{}
+    foreach ($number in $numbers) {
+        $alias = "i$number"
+        $property = $repository.PSObject.Properties[$alias]
+        if ($property -and $null -ne $property.Value) {
+            $issue = $property.Value
+            $item = [ordered]@{
+                number = [int]$issue.number
+                title = $issue.title
+                state = $issue.state
+                url = $issue.url
+                updatedAt = $issue.updatedAt
+            }
+            $ok = $true
+        } else {
+            $item = [ordered]@{
+                number = $number
+                state = "not-found"
+                url = "https://github.com/openai/codex/issues/$number"
+            }
+            $ok = $false
+        }
+        $itemsByNumber[$number] = $item
+        Add-TraceEvent -Name "github.issueEvidence" -Phase "end" -Ok $ok -Data ([ordered]@{
+            issue = $number
+            state = $item.state
+            source = "graphql-batch"
+            attempts = 1
+        })
+    }
+
+    $batchTimer.Stop()
+    Add-TraceEvent -Name "github.issueEvidence.batch" -Phase "end" -DurationMs $batchTimer.ElapsedMilliseconds -Ok $true -Data ([ordered]@{
+        issueCount = $numbers.Count
+        fallback = $null
+    })
+
+    return ConvertTo-IssueEvidenceGroups -IssueGroups $IssueGroups -ItemsByNumber $itemsByNumber
+}
+
 function Format-IssueStates {
     param([object[]]$Items)
     return (($Items | ForEach-Object { "#$($_.number)=$($_.state)" }) -join ", ")
@@ -412,24 +549,45 @@ if ($includeGitHubEvidence) {
     $issueTimer = [Diagnostics.Stopwatch]::StartNew()
     Add-TraceEvent -Name "githubIssueEvidence" -Phase "start"
     Write-DogfoodProgress "checking live GitHub issue evidence"
-    $issueWorktree = Get-IssueEvidence -Numbers $issueGroups.worktree
-    $issuePlugins = Get-IssueEvidence -Numbers $issueGroups.plugins
-    $issueWin10 = Get-IssueEvidence -Numbers $issueGroups.win10
-    $issue740 = Get-IssueEvidence -Numbers $issueGroups.issue740
-    $issueSandboxOther = Get-IssueEvidence -Numbers $issueGroups.sandboxOther
-    $issueNetwork = Get-IssueEvidence -Numbers $issueGroups.network
-    $issueWsl = Get-IssueEvidence -Numbers $issueGroups.wsl
-    $issueShell = Get-IssueEvidence -Numbers $issueGroups.shell
-    $issueSessions = Get-IssueEvidence -Numbers $issueGroups.sessions
-    $issueUi = Get-IssueEvidence -Numbers $issueGroups.ui
-    $issueConfig = Get-IssueEvidence -Numbers $issueGroups.config
-    $issueCrash = Get-IssueEvidence -Numbers $issueGroups.crash
-    $issueAv = Get-IssueEvidence -Numbers $issueGroups.av
-    $issueStore = Get-IssueEvidence -Numbers $issueGroups.store
-    $issueStoreInfra = Get-IssueEvidence -Numbers $issueGroups.storeInfra
+    $batchedIssues = Get-IssueEvidenceBatch -IssueGroups $issueGroups
+    if ($null -ne $batchedIssues) {
+        $issueWorktree = $batchedIssues["worktree"]
+        $issuePlugins = $batchedIssues["plugins"]
+        $issueWin10 = $batchedIssues["win10"]
+        $issue740 = $batchedIssues["issue740"]
+        $issueSandboxOther = $batchedIssues["sandboxOther"]
+        $issueNetwork = $batchedIssues["network"]
+        $issueWsl = $batchedIssues["wsl"]
+        $issueShell = $batchedIssues["shell"]
+        $issueSessions = $batchedIssues["sessions"]
+        $issueUi = $batchedIssues["ui"]
+        $issueConfig = $batchedIssues["config"]
+        $issueCrash = $batchedIssues["crash"]
+        $issueAv = $batchedIssues["av"]
+        $issueStore = $batchedIssues["store"]
+        $issueStoreInfra = $batchedIssues["storeInfra"]
+    } else {
+        Write-DogfoodProgress "batch GitHub issue evidence failed; falling back to serial gh issue view"
+        $issueWorktree = Get-IssueEvidence -Numbers $issueGroups.worktree
+        $issuePlugins = Get-IssueEvidence -Numbers $issueGroups.plugins
+        $issueWin10 = Get-IssueEvidence -Numbers $issueGroups.win10
+        $issue740 = Get-IssueEvidence -Numbers $issueGroups.issue740
+        $issueSandboxOther = Get-IssueEvidence -Numbers $issueGroups.sandboxOther
+        $issueNetwork = Get-IssueEvidence -Numbers $issueGroups.network
+        $issueWsl = Get-IssueEvidence -Numbers $issueGroups.wsl
+        $issueShell = Get-IssueEvidence -Numbers $issueGroups.shell
+        $issueSessions = Get-IssueEvidence -Numbers $issueGroups.sessions
+        $issueUi = Get-IssueEvidence -Numbers $issueGroups.ui
+        $issueConfig = Get-IssueEvidence -Numbers $issueGroups.config
+        $issueCrash = Get-IssueEvidence -Numbers $issueGroups.crash
+        $issueAv = Get-IssueEvidence -Numbers $issueGroups.av
+        $issueStore = Get-IssueEvidence -Numbers $issueGroups.store
+        $issueStoreInfra = Get-IssueEvidence -Numbers $issueGroups.storeInfra
+    }
     $issueTimer.Stop()
     Add-TraceEvent -Name "githubIssueEvidence" -Phase "end" -DurationMs $issueTimer.ElapsedMilliseconds -Ok $true -Data ([ordered]@{
         issueCount = 41
+        source = if ($null -ne $batchedIssues) { "graphql-batch" } else { "serial" }
     })
     Write-DogfoodProgress ("live GitHub issue evidence finished ({0} ms)" -f $issueTimer.ElapsedMilliseconds)
 } else {
