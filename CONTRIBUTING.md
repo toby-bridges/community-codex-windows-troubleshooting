@@ -24,6 +24,24 @@ Related links:
 
 Use a pull request when you are changing guide text, diagnostic scripts, the dogfood matrix, or skill references. Every new case should update the relevant guide section and, when possible, the dogfood matrix.
 
+## Version Governance
+
+The project keeps one current version source in `VERSION` and tracks user-visible changes in `CHANGELOG.md`.
+
+Use the pull request template to declare the Version impact:
+
+- `None`: editorial cleanup, typo fix, redaction, or internal-only maintenance.
+- `Patch`: compatible bug fix, evidence correction, or documentation fix that does not add a new public workflow.
+- `Minor`: new case, new diagnostic behavior, new script option, new output artifact, or new public workflow.
+- `Major`: breaking change to a documented script parameter, JSON field, case ID, evidence meaning, or workflow. Before `1.0.0`, mark breaking changes clearly in `CHANGELOG.md` and normally bump the next minor version.
+
+Coupled updates are expected:
+
+- When code or scripts change, update the relevant docs, skill instructions, or usage examples.
+- When docs describe a new workflow or behavior, update the related script, matrix, skill reference, or explicitly mark the code update as not needed.
+- When a change is user-visible, add an entry under `CHANGELOG.md` `Unreleased`.
+- Update `VERSION` only in release PRs unless the PR itself is the release preparation.
+
 ## Data Flywheel
 
 The project turns contributions into reusable troubleshooting data:
