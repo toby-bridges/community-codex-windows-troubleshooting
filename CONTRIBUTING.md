@@ -50,6 +50,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\scripts\check-change-poli
 
 For stacked pull requests, pass the branch that the PR targets as `-BaseRef`.
 
+The same version and change policy checks run in GitHub Actions for pull requests. Fix policy failures in the same PR rather than merging follow-up documentation or changelog updates separately.
+
 ## Data Flywheel
 
 The project turns contributions into reusable troubleshooting data:
