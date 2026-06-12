@@ -42,6 +42,14 @@ Coupled updates are expected:
 - When a change is user-visible, add an entry under `CHANGELOG.md` `Unreleased`.
 - Update `VERSION` only in release PRs unless the PR itself is the release preparation.
 
+Before opening a pull request, run the change policy check against the target branch:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\scripts\check-change-policy.ps1" -BaseRef "origin/main"
+```
+
+For stacked pull requests, pass the branch that the PR targets as `-BaseRef`.
+
 ## Data Flywheel
 
 The project turns contributions into reusable troubleshooting data:
