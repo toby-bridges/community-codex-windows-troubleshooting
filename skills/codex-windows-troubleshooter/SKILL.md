@@ -55,7 +55,7 @@ Run the default local dogfood pass:
 powershell -NoProfile -ExecutionPolicy Bypass -File "<skill-root>\scripts\run-codex-windows-dogfood.ps1" -Workspace "<affected-repo>"
 ```
 
-The default `Local` mode covers C001-C020 from the research guide with local read-only diagnostics and `%TEMP%` fixtures, but skips live GitHub issue checks to avoid long default runs. Use `-Mode Full` when refreshing live issue status, duplicates, fixed versions, or new comments. Use `-Mode Fast` for fixture-only smoke checks that skip both diagnostics and live GitHub evidence. Use `-KeepArtifacts` only when the user explicitly wants to inspect temporary fixtures.
+The default `Local` mode covers C001-C020 from the research guide with local read-only diagnostics and `%TEMP%` fixtures, but skips live GitHub issue checks to avoid long default runs. Use `-Mode Full` when refreshing live issue status, duplicates, fixed versions, or new comments; Full mode batches issue metadata through one `gh api graphql` call and falls back to serial `gh issue view` only if the batch query fails. Use `-Mode Fast` for fixture-only smoke checks that skip both diagnostics and live GitHub evidence. Use `-KeepArtifacts` only when the user explicitly wants to inspect temporary fixtures.
 
 Run the full evidence refresh:
 
