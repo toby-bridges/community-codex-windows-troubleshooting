@@ -1,6 +1,9 @@
 # Local dogfood and diagnostics output
+dogfood-artifacts/
+dogfood-runs/
 codex-windows-diagnostics*.json
 case-*-diagnostics*.json
+codex-windows-dogfood*.json
 *.local.json
 
 # Codex local state and sensitive logs

@@ -251,3 +251,30 @@ C011/C015 fixture 结果：
 - `official-baseline.md`：补 Microsoft WinGet/App Installer 官方基线。
 - `error-matrix.md`：新增 winget not recognized 条目。
 - diagnostics：已补 winget version、App Installer package、WindowsApps alias、PATH 只读采集。
+
+## 2026-06-11 / Skill dogfood traceability pass
+
+输入：
+
+- 来源：本机安装 `codex-windows-troubleshooter` skill 后进行 dogfood。
+- 问题：runner 看起来“卡住”，实际长时间没有 stdout，直到最终 JSON 一次性输出。
+
+根因分析：
+
+- 证据等级：B，本机 runner trace + 脚本结构复核。
+- 原版 runner 只在最后 `Write-Output $json`，中间 diagnostics、GitHub issue 检查和 fixture 命令大多被 `Out-Null` 或变量收集吞掉。
+- 本轮量化：总耗时约 54.3 秒；`collect-codex-windows-diagnostics.ps1` 约 18.0 秒；41 个 `gh issue view` 串行查询约 33.4 秒；C001 worktree fixture 约 1.7 秒。
+- 结论：这不是死锁，而是“长串行任务 + 无进度输出 + 无持久 trace”的可观测性缺陷。它会让用户把正常等待误判为 skill 卡死。
+
+已更新：
+
+- `run-codex-windows-dogfood.ps1`：新增 `-ShowProgress`，显示 diagnostics、fixture、每个 GitHub issue 查询的进度。
+- `run-codex-windows-dogfood.ps1`：新增 `-ArtifactRoot`、`-OutputPath`、`-TracePath`，可持久化 `*-dogfood-result.local.json`、`*-dogfood-trace.local.json`、`*-diagnostics.local.json`。
+- `run-codex-windows-dogfood.ps1`：result JSON 增加 `durationMs`、`diagnosticsPath`、`outputPath`、`tracePath`、`traceSummary`。
+- `SKILL.md`：补充把本地 `.local.json` artifacts 作为下一阶段指南、矩阵、issue 和 skill 迭代数据源的流程。
+- `.gitignore`：忽略 `dogfood-artifacts/`、`dogfood-runs/` 和 `.local.json`，避免机器私有 trace 被误提交。
+
+后续建议：
+
+- 如果 GitHub 查询继续占大头，可以把 41 个 issue 查询合并成 GraphQL 批量查询或增加本地 issue cache。
+- 如果 diagnostics 继续接近 20 秒，可以给 diagnostics 子脚本也加分段 trace，定位慢在 `winget`、`wsl`、DNS、Appx 还是 session/Crashpad 扫描。
